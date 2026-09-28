@@ -1031,6 +1031,16 @@ function gearMechanicForOutcome(player, entry, outcome, result = null) {
   if (tags.includes('search') && gearMechanicFor(player, 'astralTrace') && claimEvent(player, 'astralTrace')) {
     applyChanges(player, [['perception', 1]], result);
     if (result) result.consequences.push('星迹：这次发现永久抬高了一点感知。');
+    /* 【msg8 §3】星迹×6：每回合首次搜寻额外 +2 线索，并保证掉落一件装备。 */
+    if (systemTier(player, 'astral') >= 3) {
+      applyChanges(player, [['clues', 2]], result);
+      if (result) result.consequences.push('星迹成型：这一搜又钉下两条线索。');
+      const bonusGear = chooseVisibleSystemGear(player, player.turn.activeSlot);
+      if (bonusGear && canCarryItem(player, bonusGear)) {
+        giveItem(player, bonusGear, result);
+        if (result) result.consequences.push(`星迹还替你翻出一件装备：${ITEMS[bonusGear].name}。`);
+      }
+    }
   }
   if ((tags.includes('menace') || tags.includes('curse')) && gearMechanicFor(player, 'eclipseMark')) {
     gearMechanicEvent(player, 'curse_gain', {}, result);
@@ -4110,6 +4120,8 @@ function optionBudget(player, situation) {
   const insight = clamp(((player.stats.perception * .7 + player.stats.luck * .3) - 5.5) / 4.5, -1, 1);
   const four = clamp(.02 + situation.complexity * .03 + insight * .045, 0, OPTION_FOUR_RATE_CAP);
   const two = clamp(.10 + situation.pressure * .17 - insight * .03, .04, .70);
+  /* 【msg8 §3】星迹×6：必定出现第 4 个（隐藏）选项。 */
+  if (systemTier(player, 'astral') >= 3) return OPTION_MAX;
   const roll = rng.next();
   if (roll < two) return OPTION_MIN;
   if (roll > 1 - four) return OPTION_MAX;
@@ -5604,7 +5616,8 @@ function calculateGuardChance(defender, attacker, item, activeGuard) {
 
 function seizeResource(attacker, defender, attackerResult, defenderResult) {
   // 夺取只碰关键遗物、线索、钥匙和数值；体系与通用装备始终安全。
-  const protectedKey = hasGear(defender, 'gear_guardbox');
+  /* 【msg8 §3】破城×6：无视对方的守护匣，直接夺取关键道具。 */
+  const protectedKey = hasGear(defender, 'gear_guardbox') && !(systemTier(attacker, 'breach') >= 3);
   const relic = defender.inventory.find(item => ITEMS[item.id].category === 'relic');
   /* transfer 记录「这一次真正转移了什么」，供终局双倍规则按实际结果复制。
      旧实现是夺取完成后再回头查受害者身上还剩什么，最后一份资源被取走时
@@ -5701,7 +5714,12 @@ async function resolveMutualAttack(results, intents, firstIndex, secondIndex) {
 
   const activeGuard = loserIntent?.entry?.kind === 'guard';
   const defenseItem = findDefenseItem(loser, loserIntent?.itemUid);
-  const autoGuard = !activeGuard && defenseItem && ITEMS[defenseItem.id].autoProtect;
+  /* 【msg8 §3】夜猎×6：袭击者封住对方的逃遁与护盾 —— 防守方的自动防护失效。 */
+  const huntSix = systemTier(winner, 'hunt') >= 3;
+  /* 【msg8 §3】破城×6：无视对方 30% 减伤（在 calculateGuardChance 里体现），并击穿守护匣。 */
+  const breachSix = systemTier(winner, 'breach') >= 3;
+  const autoGuard = !activeGuard && defenseItem && ITEMS[defenseItem.id].autoProtect && !huntSix;
+  if (autoGuard && breachSix) results[loserIndex].consequences?.push('破城之势击穿了对方的守护匣。');
 
   if (activeGuard || autoGuard) {
     const guardChance = calculateGuardChance(loser, winner, defenseItem, activeGuard);
@@ -5749,7 +5767,8 @@ async function resolveSingleAttack(attackerIndex, defenderIndex, intent, defende
     : chooseBestItem(attacker, attackEntry);
   const activeGuard = defenderIntent?.entry?.kind === 'guard';
   const defenseItem = findDefenseItem(defender, defenderIntent?.itemUid);
-  const autoGuard = !activeGuard && defenseItem && ITEMS[defenseItem.id].autoProtect;
+  /* 【msg8 §3】夜猎×6 封住对方自动防护（逃遁/护盾失效）。 */
+  const autoGuard = !activeGuard && defenseItem && ITEMS[defenseItem.id].autoProtect && !(systemTier(attacker, 'hunt') >= 3);
 
   if (activeGuard || autoGuard) {
     const guardChance = calculateGuardChance(defender, attacker, defenseItem, activeGuard);
@@ -6866,7 +6885,11 @@ function resolveGearNpcTrade(player, npc, topic, result) {
     let price = topic.id === 'market-epic' ? [['health', -2], ['clues', -3]]
       : topic.id === 'market-universal' ? [['sanity', -2], ['clues', -2]] : [['health', -3], ['keys', -1]];
     if (hasGear(player, 'gear_ledger')) price = price.map(([key, delta]) => [key, key === 'clues' ? Math.min(0, delta + 1) : delta]);
-    if (systemTier(player, 'market') >= 3) price = price.map(([key, delta]) => [key, key === 'health' ? Math.min(0, delta + 1) : delta]);
+    /* 【msg8 §3】夜市×6：普通交易生命价归零，且线索换钱翻倍。 */
+    if (systemTier(player, 'market') >= 3) {
+      price = price.map(([key, delta]) => [key, key === 'health' ? 0 : delta]);
+      result.consequences.push('夜市成型：商人不再向你索取生命。');
+    }
     let id;
     if (topic.id === 'market-universal') id = hasGear(player, 'gear_prism') ? 'gear_dual' : 'gear_prism';
     else if (topic.id === 'market-relic') id = pick(['resonance', 'moonCompass', 'starKey']);
@@ -6970,9 +6993,15 @@ async function resolveNpcAction(player, intent, result) {
     const removed = player.statuses.filter(status => negative.has(status));
     player.statuses = player.statuses.filter(status => !negative.has(status));
     if (removed.length) result.consequences.push(`黑羽医师顺手带走了：${removed.join('、')}。`);
-    /* 【msg8 §12】黑羽医师/神秘房同时净化暴走诅咒与对应减益 buff。 */
+    /* 【msg8 §12】黑羽医师/神秘房同时净化暴走诅咒与对应减益 buff。
+       【msg8 §3】但自己若已成蚀冠×6，蚀痕不可净化。 */
+    const eclipseLocked = systemTier(player, 'eclipse') >= 3;
     const curseBefore = (player.curses || []).length;
-    player.curses = (player.curses || []).filter(name => !['蚀痕', '绞蔓', '倒影', '耳语', '空腹', '枯心'].includes(name));
+    player.curses = (player.curses || []).filter(name => {
+      if (name === '蚀痕' && eclipseLocked) return true;
+      return !['蚀痕', '绞蔓', '倒影', '耳语', '空腹', '枯心'].includes(name);
+    });
+    if (eclipseLocked && (player.curses || []).includes('蚀痕')) result.consequences.push('蚀痕已刻进骨血，净化也带不走它。');
     const buffBefore = (player.buffs || []).length;
     player.buffs = (player.buffs || []).filter(buff => !(buff.id?.startsWith('berserk-')) && buff.label !== '枯心');
     if (curseBefore !== (player.curses || []).length || buffBefore !== (player.buffs || []).length) {
