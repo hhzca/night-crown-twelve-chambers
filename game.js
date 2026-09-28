@@ -8633,7 +8633,11 @@ function handleKeydown(event) {
     return;
   }
 
-  /* 【msg8 §4】主动技能：选择阶段按 R 打开技能面板 / 再次按 R 关闭。 */
+  /* 【msg8 §4 / §21】主动技能面板：选择阶段按 R 开 / 合。
+     说明：§21 早期草案写「F 开技能栏、1–6 选技能」，但 F 已是本侧「确认」键、
+     1–4 已是本侧「主动道具」热键（keys.js 双人键位表），直接照抄会撞键。
+     现方案取自该节「沿用现有字母绑定」的约束：R 常驻开合技能面板，
+     每人只有一个主动，面板内直接用鼠标/确认键释放，无需 1–6 选技能。 */
   if (event.code === 'KeyR' && isSelectPhase()) {
     const pidx = state.players.findIndex(p => p.control === 'human' && !playerCannotAct(p) && isSelectPhase());
     if (pidx >= 0) {
