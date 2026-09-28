@@ -2774,10 +2774,21 @@ function renderInventory(player) {
   if (bonusHost) {
     const owned = Object.keys(GEAR_SYSTEMS).map(key => ({ key, count: systemCount(player, key) })).filter(row => row.count);
     bonusHost.innerHTML = owned.length ? owned.map(({ key, count }) => {
-      const tier = systemTier(player, key);
-      const bonus = tier ? SYSTEM_TIER_BONUS[key].slice(0, tier).join(' · ') : '单件主属性辅助';
-      const next = tier === 3 ? '已成型' : `再得${[2, 4, 6][tier] - count}件升阶`;
-      return `<div class="system-bonus-row" style="--system-color:${GEAR_SYSTEMS[key].color}"><b>${GEAR_SYSTEMS[key].name} ${count}/6</b><span>${tier ? `${tier}阶` : '未成套'} · ${bonus}</span><small>${next}</small></div>`;
+      const tier = systemTier(player, key);          // 0 / 1 / 2 / 3 （对应 2 / 4 / 6 件）
+      const spec = GEAR_SYSTEMS[key];
+      const color = spec.color;
+      /* 【msg8 §3】仅 2/4/6 件显示对应行，文字用体系色。
+         tier 1 = 2件、tier 2 = 4件、tier 3 = 6件（质变，走 SYSTEM_UNIQUE）。 */
+      const rows = [];
+      for (let i = 0; i < tier; i += 1) {
+        const need = [2, 4, 6][i];
+        const isFinal = i === 2;
+        const text = isFinal ? `【6件质变】${SYSTEM_UNIQUE[key].label}：${SYSTEM_UNIQUE[key].text}` : SYSTEM_TIER_BONUS[key][i];
+        rows.push(`<span class="system-tier-line ${isFinal ? 'final' : ''}" style="--system-color:${color}">${need}件 · ${text}</span>`);
+      }
+      const next = tier === 3 ? '<small class="system-formed">已成型 · 最终能力已解锁</small>'
+        : `<small>再得 ${[2, 4, 6][tier] - count} 件升阶</small>`;
+      return `<div class="system-bonus-row" style="--system-color:${color}"><b style="color:${color}">${spec.name} ${count}/6</b>${rows.join('')}${next}</div>`;
     }).join('') : '<span class="system-bonus-empty">尚无体系装备</span>';
   }
   const statusBits = [
@@ -3925,6 +3936,12 @@ function attackStyle(player) {
   return rng.next() < .72 ? scores[0][0] : pick(scores).at(0);
 }
 
+/* 【msg8 §2】感知抢夺（Perception-Seize）门槛。 */
+const PERCEPTION_SEIZE_GATE = 50;
+function hasPerceptionSeize(player) {
+  return effectiveStat(player, 'perception') >= PERCEPTION_SEIZE_GATE;
+}
+
 function makeAttackOption(player, target) {
   const room = ROOM_BY_ID[player.room];
   const style = attackStyle(player);
@@ -3935,13 +3952,29 @@ function makeAttackOption(player, target) {
   const variants = {
     force: [`冲过去夺取${target.label}的行囊`, `借${room.name}的狭窄地势正面逼近`],
     ambush: [`从阴影里扑向${target.label}的行囊`, `等${target.label}转身时突然夺取`],
-    menace: [`堵住退路逼${target.label}交出物品`, `压低声音向${target.label}发出最后警告`]
+    menace: [`堵住退路逼${target.label}交出物品`, `压低声音向${target.label}发出最后警告`],
+    perception: [`看穿${target.label}的破绽，一击取其行囊`, `顺着${target.label}的呼吸节奏伸手`]
   };
   return {
     id: `attack-${state.round}-${player.index}-${target.id}-${style}`,
     kind: 'attack', style, targetId: target.id, stat: style === 'force' ? 'strength' : style === 'ambush' ? 'stealth' : 'intimidation',
     risk: 3, tags: style === 'force' ? ['force', 'intimidate'] : style === 'ambush' ? ['stealth', 'dark'] : ['intimidate', 'guard'],
-    text: pick(variants[style]), flavor: `预计实际夺取率约${effective.toFixed(1)}%；防护和现场变化会改变结果，失败者入地牢`
+    text: pick(variants[style] || variants.force), flavor: `预计实际夺取率约${effective.toFixed(1)}%；防护和现场变化会改变结果，失败者入地牢`
+  };
+}
+
+/* 【msg8 §2】感知抢夺选项：感知满 50 才出现。
+   它的成功率取决于「对方隐藏与防护」，而与自己力量无关（见 calculateAttackChance）。 */
+function makePerceptionSeizeOption(player, target) {
+  if (!hasPerceptionSeize(player)) return null;
+  const estimate = calculateAttackChance(player, target, { style: 'perception' }, null).finalChance;
+  const effective = Math.round(estimate * 100) / 10;
+  return {
+    id: `perception-seize-${state.round}-${player.index}-${target.id}`,
+    kind: 'attack', style: 'perception', targetId: target.id, stat: 'perception',
+    risk: 3, tags: ['seize', 'perception', 'dark'],
+    text: `以感知锁死${target.label}的动作，在其换手的一瞬取走行囊`,
+    flavor: `感知抢夺：成败取决于${target.label}的隐藏与防护，而非你的力量。预计约${effective.toFixed(1)}%`
   };
 }
 
@@ -4161,6 +4194,12 @@ function generateOptions(player, slot = 1) {
       .sort((a, b) => (a.stats.health + a.stats.stamina) - (b.stats.health + b.stats.stamina))
       .slice(0, 2)
       .forEach(target => forced.push({ rank: .4, entry: makeAttackOption(player, target) }));
+    /* 【msg8 §2】感知满 50：对最具威胁的对手追加一条「感知抢夺」。 */
+    if (hasPerceptionSeize(player)) {
+      const seizeTarget = [...targets].sort((a, b) => (b.inventory?.length || 0) - (a.inventory?.length || 0))[0];
+      const seizeOpt = makePerceptionSeizeOption(player, seizeTarget);
+      if (seizeOpt) forced.push({ rank: .38, entry: seizeOpt });
+    }
     forced.push({ rank: .35, entry: makeGuardOption(player) });
   }
   npcPool.filter(entry => !banned(entry)).slice(0, 1).forEach(entry => forced.push({ rank: .4, entry }));
@@ -5421,6 +5460,14 @@ function effectiveAttackScores(attacker, defender, style = 'force') {
     return {
       attack: a('intimidation') * .6 + a('sanity') * .25 + a('strength') * .15,
       defense: (d('intimidation') * .35 + d('sanity') * .4 + d('strength') * .25) * defenseBoost
+    };
+  }
+  /* 【msg8 §2】感知抢夺：进攻只看自己的感知（不看力量），
+     防守完全由对方的隐藏与防护决定 —— 「概率取决于对方隐藏与防护而非自己力量」。 */
+  if (style === 'perception') {
+    return {
+      attack: a('perception'),
+      defense: (d('stealth') * .6 + d('perception') * .4) * defenseBoost
     };
   }
   return {

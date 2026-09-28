@@ -1597,6 +1597,9 @@ body {
 .system-bonus-row b { color: var(--system-color); }
 .system-bonus-row span { color: #e2dce6; line-height: 1.3; }
 .system-bonus-row small, .system-bonus-empty { color: #a9a2b0; font-size: 11px; }
+.system-tier-line { display: block; font-size: 12px; line-height: 1.35; color: #d8d2e0; }
+.system-tier-line.final { color: var(--system-color); font-weight: 600; }
+.system-bonus-row small.system-formed { color: var(--system-color); }
 .info-strip.bonus-focus .inventory-block, .info-strip.bonus-focus .stats-grid, .info-strip.bonus-focus .status-line { display:none; }
 .info-strip.bonus-focus .system-bonuses > div { max-height:none; overflow:visible; }
 .info-strip .status-line { grid-column: auto; }
