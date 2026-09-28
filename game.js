@@ -5817,6 +5817,12 @@ consequenceFor(player, outcome, result, entry);
       applyChanges(player, [['stamina', 1]], result);
       result.consequences.push('破城的势头让你回了一点体力。');
     }
+    /* 【msg8 §9】探索成功也给金币，且随回合略增，呼应「探索金钱获得会多」。 */
+    if (['search', 'sneak', 'mystery', 'explore'].some(t => entry.tags?.includes(t))) {
+      const goldGain = 8 + Math.floor((state.round || 1) / 2);
+      player.gold = (player.gold || 0) + goldGain;
+      result.consequences.push(`探索中你摸到 ${goldGain} 枚散落的金币（将计入总分）。`);
+    }
   }
   result.pendingChanges = staged;
   result.feedback.changesPending = true;
@@ -5903,7 +5909,9 @@ async function resolveRewardAction(player, intent, result) {
   await animateActor(player.index, 'rewarding', reducedMotion || state.headless ? 0 : 900);
   /* 【msg8 §9】金币类奖励真正累积金币（此前全文件从未给 player.gold 赋值，导致金币永远计 0 分）。 */
   if (intent.entry.tags && intent.entry.tags.includes('gold')) {
-    const goldGain = 30;
+    /* 【msg8 §9】不同金钱来源给不同加值：流金密室最丰，其它 gold 标记来源次之。 */
+    const GOLD_BY_ENTRY = { '取走流金': 40 };
+    const goldGain = GOLD_BY_ENTRY[intent.entry.text] || 25;
     player.gold = (player.gold || 0) + goldGain;
     result.consequences.push(`流金顺着指缝淌进怀里，你攒下 ${goldGain} 枚金币（将计入总分）。`);
   }
@@ -6816,10 +6824,7 @@ function scoreBreakdown(player) {
     + player.inventory.filter(item => ITEMS[item.id].category === 'relic')
       .reduce((sum, item) => sum + (ITEMS[item.id].value || 1) * 2.5, 0));
   const build = Math.min(3, Object.keys(GEAR_SYSTEMS).reduce((sum, key) => sum + (systemTier(player, key) === 3 ? 1.5 : systemTier(player, key) === 2 ? .5 : 0), 0));
-  /* 【msg8 §9】金币计分：此前 scoreBreakdown 没有 gold 字段，结算条虽显示 parts.gold 却恒为 0。
-     现在把累积金币计入总分（封顶 14，系数 0.05）。 */
-  const gold = Math.min(14, (player.gold || 0) * 0.05);
-  return { core, vitals, keyItems, build, gold };
+  return { core, vitals, keyItems, build };
 }
 
 function scorePlayer(player) {
