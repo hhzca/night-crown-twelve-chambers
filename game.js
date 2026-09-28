@@ -1103,6 +1103,8 @@ const itemCategoryOf = item => ITEMS[item?.id]?.category || 'active';
    注意：HELL/破城等处描述里的「3 点」等数值是按上限 5 的尺度写的。 */
 const MAX_VITAL = 5;
 const VITAL_KEYS = ['health', 'stamina', 'sanity'];
+/* 【msg8 §9】金币→分数的换算系数：每 1 金 = 0.05 分，总分封顶 14 分（约等于一条完整体系线）。 */
+const GOLD_SCORE_K = 0.05;
 const BAG_CAPACITY = 10;
 const OTHER_ITEM_CAPACITY = 8;
 function itemCapacityGroup(itemId) {
@@ -7433,7 +7435,10 @@ function scoreBreakdown(player) {
     + player.inventory.filter(item => ITEMS[item.id].category === 'relic')
       .reduce((sum, item) => sum + (ITEMS[item.id].value || 1) * 2.5, 0));
   const build = Math.min(3, Object.keys(GEAR_SYSTEMS).reduce((sum, key) => sum + (systemTier(player, key) === 3 ? 1.5 : systemTier(player, key) === 2 ? .5 : 0), 0));
-  return { core, vitals, keyItems, build };
+  /* 【msg8 §9】金币是真实计分来源：此前 scorePlayer 已读 parts.gold，但这里从没返回，
+     导致 (…+gold) 恒为 NaN、结算条金币计分永远是 0。封顶 14 分，避免刷钱支配排名。 */
+  const gold = Math.min(14, (player.gold || 0) * GOLD_SCORE_K);
+  return { core, vitals, keyItems, build, gold };
 }
 
 function scorePlayer(player) {
@@ -7588,7 +7593,7 @@ function endGame(reason = 'dawn') {
         <small class="end-gear">套装：${sets.join('、') || '未成型'}</small>
         ${affixes.length ? `<small class="end-gear">关键成长词条：${affixes.join('、')}</small>` : ''}
         <details class="end-detail"><summary>分数从哪来</summary>
-          <span>核心成长 ${Math.round(parts.core * 10) / 10} · 生存状态 ${Math.round(parts.vitals * 10) / 10} · 关键物品 ${Math.round(parts.keyItems * 10) / 10} · 构筑完成度 ${Math.round(parts.build * 10) / 10}</span>
+          <span>核心成长 ${Math.round(parts.core * 10) / 10} · 生存状态 ${Math.round(parts.vitals * 10) / 10} · 关键物品 ${Math.round(parts.keyItems * 10) / 10} · 构筑完成度 ${Math.round(parts.build * 10) / 10} · 金币 ${Math.round((parts.gold || 0) * 10) / 10}</span>
         </details></div><strong>${score}<em>夜冠印记</em></strong>
     </article>`;
   }).join('');
