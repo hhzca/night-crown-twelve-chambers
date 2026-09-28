@@ -102,7 +102,10 @@ Object.assign(ROOM_BY_ID, Object.fromEntries(STAGE_ROOMS.map(room => [room.id, r
 /* 原有城堡的普通房间池：12 间，和改动前完全一致。
    带 stage 字段的房间属于新阶段，不进这个池子。 */
 const NORMAL_ROOM_IDS = ROOMS.filter(room => !room.special && !room.stage).map(room => room.id);
-const stageRoomIds = stageId => STAGE_ROOMS.filter(room => room.stage === stageId).map(room => room.id);
+/* 【msg8 §18】钟楼碎影落点扩及整座城堡：排除 special（崩溃时钟另行显形）与终局核心房
+   （塔顶钟楼/血染王座），其余所有房间都进碎影门池。 */
+const ALL_LANDING_ROOM_IDS = ROOMS.filter(room => !room.special && room.id !== 'collapseClock' && room.id !== 'bellTower' && room.id !== 'bloodThrone').map(room => room.id);
+const stageRoomIds = stageId => stageId === 'shard' ? ALL_LANDING_ROOM_IDS : STAGE_ROOMS.filter(room => room.stage === stageId).map(room => room.id);
 
 /* 焚罪地狱的失败代价（提示词第四节）。
    失败就按这里的账扣，然后继续留在地狱、下一次行动重新选考验。
@@ -1813,7 +1816,7 @@ const STAGES = [
   { id: 'finale', label: '终局之战', rounds: 8, hint: '八个终局房间；塔顶钟楼与血染王座是核心房间。' },
   /* 这条说明要和实际路线池一致：碎影里每回合只有一扇随机门，
      落点全是碎影自己的房间；崩溃时钟在最后两回合才显形。 */
-  { id: 'shard', label: '钟楼碎影', rounds: 5, hint: '每回合只有一扇随机门，落点全是错位的碎影房间；钟盘只剩最后一圈时，崩溃时钟会显形。' }
+  { id: 'shard', label: '钟楼碎影', rounds: 5, hint: '每回合只有一扇随机门，落点扩及整座城堡的任意错位房间；钟盘只剩最后一圈时，崩溃时钟会显形。' }
 ];
 const stageById = id => STAGES.find(stage => stage.id === id) || STAGES[0];
 
@@ -2010,7 +2013,7 @@ function makePlayer(index, heroIndex, control) {
     result: null,
     roundResult: null,
     skipTurns: 0, skippedThisRound: false, jailedThisRound: false,
-    lastRewardRound: -10, travelNotes: [], hatred: {},
+    lastRewardRound: -10, travelNotes: [], hatred: {}, gold: 0,
     routePlan: [], goal: null, injuries: [], protection: 0, dungeonHistory: [],
     actionPoints: ACTION_POINTS_PER_ROUND, talentUsedThisRound: false, collapsed: false,
     npcRelation: {}, wardCharges: 0, chainKeyUsed: false, quickUsedThisRound: false,
@@ -2685,14 +2688,22 @@ function relationOf(player, npcId) {
 function addRelation(player, npcId, delta) {
   if (!delta) return;
   player.npcRelation = player.npcRelation || {};
-	player.npcRelation[npcId] = (player.npcRelation[npcId] || 0) + delta;
-	// 好感首次达到现有体系的最高档 → 该 NPC 赠送时间护符。
-	// 每名玩家每局最多通过这条机制拿到一枚，不能靠多个 NPC 或反复对话刷取。
-	if (!player.charmGranted && (player.npcRelation[npcId] || 0) >= NPC_RELATION_LEVELS[0].min) {
-		player.charmGranted = true;
-		player.charms = (player.charms || 0) + 1;
-		player.travelNotes.push(`${NPCS[npcId]?.name || '友人'}赠给你一枚时间护符。它不占行囊，在时空房间可使用，也能修补崩溃时钟。`);
-	}
+  const MAX_REL = NPC_RELATION_LEVELS[0].min; // 满好感阈值 = 信任(3)
+  let after = (player.npcRelation[npcId] || 0) + delta;
+  /* 【msg8 §11】NPC 好感满(>=3)只归属一个玩家：若已被他人占满，自己封顶在 2(亲近)，
+     拿不到满好感最终对话，也不会抢走归属。 */
+  state.npcMaxedOwner = state.npcMaxedOwner || {};
+  const owner = state.npcMaxedOwner[npcId];
+  if (after >= MAX_REL && owner && owner !== player.id) after = MAX_REL - 1;
+  player.npcRelation[npcId] = after;
+  if (after >= MAX_REL && !owner) state.npcMaxedOwner[npcId] = player.id; // 首个拉满者登记为唯一归属
+  // 好感首次达到现有体系的最高档 → 该 NPC 赠送时间护符。
+  // 每名玩家每局最多通过这条机制拿到一枚，不能靠多个 NPC 或反复对话刷取。
+  if (!player.charmGranted && (player.npcRelation[npcId] || 0) >= NPC_RELATION_LEVELS[0].min) {
+    player.charmGranted = true;
+    player.charms = (player.charms || 0) + 1;
+    player.travelNotes.push(`${NPCS[npcId]?.name || '友人'}赠给你一枚时间护符。它不占行囊，在时空房间可使用，也能修补崩溃时钟。`);
+  }
 }
 
 function choiceTone(entry) {
@@ -5143,7 +5154,11 @@ function calculateAttackChance(attacker, defender, entry, item = null, context =
     - crowdPenalty;
   const baseCeiling = systemTier(attacker, 'hunt') >= 3 && entry.style === 'ambush' ? .90 : .78;
   const ceiling = crownBonus ? Math.max(baseCeiling, .95) : baseCeiling;
-  const finalChance = clamp(rawFinal, .20, ceiling);
+  let finalChance = clamp(rawFinal, .20, ceiling);
+  /* 【msg8 §20】无体系加成 = 随机夺取：未带进攻体系(夜猎/破城/蚀冠<2件)且非王冠持有者时，
+     夺取率退化为纯随机掷骰(约 42%)，忽略属性优势；带体系或王冠才走确定性公式。 */
+  const hasOffensiveSystem = systemTier(attacker, 'hunt') >= 2 || systemTier(attacker, 'breach') >= 2 || systemTier(attacker, 'eclipse') >= 2;
+  if (!hasOffensiveSystem && !crownBonus) finalChance = clamp(.42, .20, .95);
 
   return {
     /* chance 与 finalChance 永远同一个值：预览、人机评估、实际判定、
@@ -5293,6 +5308,7 @@ async function resolveMutualAttack(results, intents, firstIndex, secondIndex) {
       results[winnerIndex].title = '你的优势撞上了准备好的反制';
       results[winnerIndex].story = '清脆的反制音切开低鸣，脚下的地面随即翻转。';
       results[winnerIndex].consequences.push('对方的防护成功反制了这次优势攻势。');
+      if (String(state.crownHolder || '') === String(state.players[winnerIndex].id)) state.players[winnerIndex].crownFailedAttack = true;
       await sendToDungeon(winner, results[winnerIndex], '防护反制成功。');
       return;
     }
@@ -5309,6 +5325,7 @@ async function resolveMutualAttack(results, intents, firstIndex, secondIndex) {
   results[loserIndex].consequences.push(`${weakEdge}，你成了被带走的那一个。`);
   seizeResource(winner, loser, results[winnerIndex], results[loserIndex]);
   loser.hatred[winner.id] = (loser.hatred[winner.id] || 0) + 3;
+  if (String(state.crownHolder || '') === String(loser.id)) loser.crownFailedAttack = true;
   await sendToDungeon(loser, results[loserIndex], '正面对抗处于劣势，成为失败者。');
 }
 
@@ -5341,6 +5358,7 @@ async function resolveSingleAttack(attackerIndex, defenderIndex, intent, defende
       attackerResult.title = '攻击撞上了准备好的反制';
       attackerResult.story = '清脆的反制音切开低鸣，脚下地面随即翻转。';
       if (attackerItem) useAndMaybeBreakItem(attacker, attackerItem, attackerResult);
+      if (String(state.crownHolder || '') === String(attacker.id)) attacker.crownFailedAttack = true;
       await sendToDungeon(attacker, attackerResult, '防护反制成功。');
       return { jailed: attackerIndex, consumed: new Set([attackerIndex, defenderIndex]) };
     }
@@ -5383,6 +5401,8 @@ async function resolveSingleAttack(attackerIndex, defenderIndex, intent, defende
   attackerResult.title = '夺取落空，地牢选择了攻击者';
   attackerResult.story = '对方从你挥出的那条线旁边全身退开。你没有留下任何能被夺走的东西，只听见牢门在脚下开启。';
   attackerResult.consequences.push(`${attackEdge}，可这一次你还是慢了半步。${crowdNote}`);
+  /* 【msg8 §19】戴冠者发起夺取却失败 → 标记，结算时总分 ×0.85。 */
+  if (String(state.crownHolder || '') === String(attacker.id)) attacker.crownFailedAttack = true;
   defenderResult.outcome = 'great';
   defenderResult.title = '你从攻击边缘全身而退';
   defenderResult.story = '那一下擦过你的衣角，撞进黑暗里。你没有受伤，也没有凭空多得什么。';
@@ -5881,6 +5901,12 @@ async function resolveRewardAction(player, intent, result) {
   if (viewer) addStageEffect(viewer.index, 'reward-burst', 1200);
   if (viewer && audio.reward) audio.reward(viewer.index);
   await animateActor(player.index, 'rewarding', reducedMotion || state.headless ? 0 : 900);
+  /* 【msg8 §9】金币类奖励真正累积金币（此前全文件从未给 player.gold 赋值，导致金币永远计 0 分）。 */
+  if (intent.entry.tags && intent.entry.tags.includes('gold')) {
+    const goldGain = 30;
+    player.gold = (player.gold || 0) + goldGain;
+    result.consequences.push(`流金顺着指缝淌进怀里，你攒下 ${goldGain} 枚金币（将计入总分）。`);
+  }
   if (validRelic) {
     result.outcome = 'great';
     result.title = `${ITEMS[item.id].name}叫醒了更深的那一层`;
@@ -6790,19 +6816,22 @@ function scoreBreakdown(player) {
     + player.inventory.filter(item => ITEMS[item.id].category === 'relic')
       .reduce((sum, item) => sum + (ITEMS[item.id].value || 1) * 2.5, 0));
   const build = Math.min(3, Object.keys(GEAR_SYSTEMS).reduce((sum, key) => sum + (systemTier(player, key) === 3 ? 1.5 : systemTier(player, key) === 2 ? .5 : 0), 0));
-  return { core, vitals, keyItems, build };
+  /* 【msg8 §9】金币计分：此前 scoreBreakdown 没有 gold 字段，结算条虽显示 parts.gold 却恒为 0。
+     现在把累积金币计入总分（封顶 14，系数 0.05）。 */
+  const gold = Math.min(14, (player.gold || 0) * 0.05);
+  return { core, vitals, keyItems, build, gold };
 }
 
 function scorePlayer(player) {
 	// 被淘汰的人用冻结的得分快照；0.85 只作用于「被血染王冠淘汰」的人。
 	if (player.scoreSnapshot !== undefined && player.scoreSnapshot !== null) {
-		const penalty = player.eliminatedByCrown ? 0.85 : 1;
+		const penalty = (player.eliminatedByCrown ? 0.85 : 1) * (player.crownFailedAttack ? 0.85 : 1);
 		return Math.round(player.scoreSnapshot * bellMultiplierFor(player) * penalty * 10) / 10;
 	}
 	if (player.stats.health <= 0 || player.stats.sanity <= 0 || player.collapsed) return -1;
-  const { core, vitals, keyItems, build } = scoreBreakdown(player);
+  const { core, vitals, keyItems, build, gold } = scoreBreakdown(player);
 	// 塔顶钟楼的奇偶倍率在这里生效。倍率全部算完再统一四舍五入（提示词第六节）。
-	return Math.round((core + vitals + keyItems + build) * bellMultiplierFor(player) * 10) / 10;
+	return Math.round((core + vitals + keyItems + build + gold) * bellMultiplierFor(player) * 10) / 10;
 }
 
 // 崩溃只处理对应角色：真人崩溃结束对局，隐藏人机崩溃仅被移除并广播叙事。
