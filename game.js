@@ -6100,11 +6100,12 @@ consequenceFor(player, outcome, result, entry);
       applyChanges(player, [['stamina', 1]], result);
       result.consequences.push('破城的势头让你回了一点体力。');
     }
-    /* 【msg8 §9】探索成功也给金币，且随回合略增，呼应「探索金钱获得会多」。 */
+    /* 【msg8 §8】探索金币最多：探索成功金币系数是其它选项的 1.5~2×，随回合/难度递增。 */
     if (['search', 'sneak', 'mystery', 'explore'].some(t => entry.tags?.includes(t))) {
-      const goldGain = 8 + Math.floor((state.round || 1) / 2);
+      const riskMul = 1 + (Number(entry.risk) || 1) * .2;
+      const goldGain = Math.round((12 + Math.floor((state.round || 1) / 2) * 3) * riskMul);
       player.gold = (player.gold || 0) + goldGain;
-      result.consequences.push(`探索中你摸到 ${goldGain} 枚散落的金币（将计入总分）。`);
+      result.consequences.push(`探索中你摸到 ${goldGain} 枚散落的金币（探索收益最高，将计入总分）。`);
     }
   }
   result.pendingChanges = staged;
@@ -6192,9 +6193,13 @@ async function resolveRewardAction(player, intent, result) {
   await animateActor(player.index, 'rewarding', reducedMotion || state.headless ? 0 : 900);
   /* 【msg8 §9】金币类奖励真正累积金币（此前全文件从未给 player.gold 赋值，导致金币永远计 0 分）。 */
   if (intent.entry.tags && intent.entry.tags.includes('gold')) {
-    /* 【msg8 §9】不同金钱来源给不同加值：流金密室最丰，其它 gold 标记来源次之。 */
-    const GOLD_BY_ENTRY = { '取走流金': 40 };
-    const goldGain = GOLD_BY_ENTRY[intent.entry.text] || 25;
+    /* 【msg8 §8/§9】不同金钱来源分级：流金(goldVault) 极大 / 赤金契约 大 / 钱袋 中 / 零钱堆 小。 */
+    const GOLD_ITEM_TIER = {
+      零钱堆: 8, 钱袋: 22, 流金: 45, 赤金契约: 70
+    };
+    const held = player.inventory.find(it => GOLD_ITEM_TIER[ITEMS[it.id]?.name]);
+    const GOLD_BY_ENTRY = { '取走流金': 45 };
+    const goldGain = held ? GOLD_ITEM_TIER[ITEMS[held.id].name] : (GOLD_BY_ENTRY[intent.entry.text] || 25);
     player.gold = (player.gold || 0) + goldGain;
     result.consequences.push(`流金顺着指缝淌进怀里，你攒下 ${goldGain} 枚金币（将计入总分）。`);
   }
