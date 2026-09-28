@@ -186,7 +186,7 @@ const HEROES = [
       summary: '硬碰硬失手的时候，钟声会替你卸掉最重的那一下。',
       detail: '以力气或气势正面硬上却彻底失手时，钟声会把最狠的那一半反噬挡掉，让事情只停在“没成”；一整夜里只响一次。'
     },
-    base: { health: 9, stamina: 8, sanity: 6, strength: 7, agility: 5, perception: 5, luck: 5, intimidation: 6, stealth: 4, keys: 0, clues: 0 }
+    base: { health: 5, stamina: 5, sanity: 3, strength: 7, agility: 5, perception: 5, luck: 5, intimidation: 6, stealth: 4, keys: 0, clues: 0 }
   },
   {
     name: '莫斯', title: '蘑菇炼金师', className: 'hero-1', trait: '感知与神秘解读', kit: ['lantern', 'mirrorCharm'],
@@ -195,7 +195,7 @@ const HEROES = [
       summary: '用过的东西常常还能再用一次；净化时能多洗掉一层附着的阴影。',
       detail: '每次动用行囊里的东西，它都有机会一点不磨损；净化时会额外多摘掉一个负面状态或诅咒。'
     },
-    base: { health: 7, stamina: 6, sanity: 7, strength: 4, agility: 5, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 }
+    base: { health: 4, stamina: 3, sanity: 4, strength: 4, agility: 5, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 }
   },
   {
     name: '诺克斯', title: '影子牧灯人', className: 'hero-2', trait: '敏捷与潜伏伏击', kit: ['lockpick', 'mistCloak'],
@@ -204,19 +204,19 @@ const HEROES = [
       summary: '藏在暗处、靠身手完成的事情更稳；没有人看着你时，下手格外顺。',
       detail: '凡是靠藏匿或身手去做的行动都更稳当；当这间房里没有第二双眼睛盯着你时，夺取会明显更容易得手。'
     },
-    base: { health: 6, stamina: 7, sanity: 8, strength: 4, agility: 7, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 }
+    base: { health: 3, stamina: 4, sanity: 5, strength: 4, agility: 7, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 }
   }
 ];
 
 // 保留原版三人；七张新立绘各对应一个有独立规则的可玩角色。
 const NEW_HEROES = [
-  { name: '花棠', title: '白花信使', artSlug: '01-white-pink-flower', trait: '搜寻与留下线索', kit: ['chalk', 'tonic'], talent: { id: 'flowerTrace', name: '花径留痕', summary: '每回合首次成功搜寻会额外找到一条线索。', detail: '每回合第一次成功的搜寻行动额外获得一条线索。' }, base: { health: 7, stamina: 7, sanity: 8, strength: 4, agility: 6, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 0 } },
-  { name: '双生', title: '相拥旅者', artSlug: '02-embracing-duo', trait: '互相守护与疗愈', kit: ['styptic', 'mirrorCharm'], talent: { id: 'embraceWard', name: '共担微光', summary: '每回合首次受到伤害时保住一口气。', detail: '每回合首次在普通行动中受伤时，立即恢复一点生命并消除疲惫。两人是同一可玩单位。' }, base: { health: 9, stamina: 6, sanity: 7, strength: 4, agility: 4, perception: 6, luck: 6, intimidation: 5, stealth: 5, keys: 0, clues: 0 } },
-  { name: '绯影', title: '蒙面潜行者', artSlug: '03-black-red-hood', trait: '暗处行动与脱身', kit: ['smokeVial', 'lockpick'], talent: { id: 'redVeil', name: '赤影换位', summary: '潜行行动更稳，失败时也能掩去踪迹。', detail: '隐藏与敏捷行动获得稳定加成；每回合首次潜行失败移除暴露并恢复一点体力。' }, base: { health: 6, stamina: 8, sanity: 7, strength: 4, agility: 8, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 } },
-  { name: '蔷薇', title: '温室守护者', artSlug: '04-green-rose', trait: '疗愈与荆棘通路', kit: ['thornSeed', 'tonic'], talent: { id: 'roseBloom', name: '蔷薇再生', summary: '每回合首次恢复行动会再补一点体力。', detail: '每回合第一次进行恢复或净化行动，额外恢复一点体力，并记下花园通路。' }, base: { health: 7, stamina: 7, sanity: 8, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '赤冠号令', summary: '威慑更稳；每回合首次成功威慑后标记一名对手。', detail: '威慑行动获得稳定加成；每回合第一次成功威慑后标记一名在场对手——被标记者下回合行动风险提高，你对其夺取 / 攻击获得加成。' }, base: { health: 8, stamina: 7, sanity: 7, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
-  { name: '彩墨', title: '斑斓画师', artSlug: '06-rainbow-painter', trait: '道具保养与发现', kit: ['paintVial', 'echoBell'], talent: { id: 'colorKeeper', name: '调色匣', summary: '每回合首次动用道具不磨损。', detail: '每回合首次真正消耗道具时保留它的耐久；若用画具，额外发现一条线索。' }, base: { health: 7, stamina: 7, sanity: 7, strength: 4, agility: 6, perception: 7, luck: 7, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '眠羊织梦', summary: '神秘行动更稳；每回合首次成功神秘后使一名对手陷入沉迷。', detail: '神秘与理智行动获得稳定加成；每回合第一次成功的神秘行动使一名对手陷入「沉迷」——其下回合敏捷与感知临时下降，并暴露一条线索给你。' }, base: { health: 7, stamina: 6, sanity: 9, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
+  { name: '花棠', title: '白花信使', artSlug: '01-white-pink-flower', trait: '搜寻与留下线索', kit: ['chalk', 'tonic'], talent: { id: 'flowerTrace', name: '花径留痕', summary: '每回合首次成功搜寻会额外找到一条线索。', detail: '每回合第一次成功的搜寻行动额外获得一条线索。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 6, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 0 } },
+  { name: '双生', title: '相拥旅者', artSlug: '02-embracing-duo', trait: '互相守护与疗愈', kit: ['styptic', 'mirrorCharm'], talent: { id: 'embraceWard', name: '共担微光', summary: '每回合首次受到伤害时保住一口气。', detail: '每回合首次在普通行动中受伤时，立即恢复一点生命并消除疲惫。两人是同一可玩单位。' }, base: { health: 5, stamina: 3, sanity: 4, strength: 4, agility: 4, perception: 6, luck: 6, intimidation: 5, stealth: 5, keys: 0, clues: 0 } },
+  { name: '绯影', title: '蒙面潜行者', artSlug: '03-black-red-hood', trait: '暗处行动与脱身', kit: ['smokeVial', 'lockpick'], talent: { id: 'redVeil', name: '赤影换位', summary: '潜行行动更稳，失败时也能掩去踪迹。', detail: '隐藏与敏捷行动获得稳定加成；每回合首次潜行失败移除暴露并恢复一点体力。' }, base: { health: 3, stamina: 5, sanity: 4, strength: 4, agility: 8, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 } },
+  { name: '蔷薇', title: '温室守护者', artSlug: '04-green-rose', trait: '疗愈与荆棘通路', kit: ['thornSeed', 'tonic'], talent: { id: 'roseBloom', name: '蔷薇再生', summary: '每回合首次恢复行动会再补一点体力。', detail: '每回合第一次进行恢复或净化行动，额外恢复一点体力，并记下花园通路。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
+  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '赤冠号令', summary: '威慑更稳；每回合首次成功威慑后标记一名对手。', detail: '威慑行动获得稳定加成；每回合第一次成功威慑后标记一名在场对手——被标记者下回合行动风险提高，你对其夺取 / 攻击获得加成。' }, base: { health: 5, stamina: 4, sanity: 4, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
+  { name: '彩墨', title: '斑斓画师', artSlug: '06-rainbow-painter', trait: '道具保养与发现', kit: ['paintVial', 'echoBell'], talent: { id: 'colorKeeper', name: '调色匣', summary: '每回合首次动用道具不磨损。', detail: '每回合首次真正消耗道具时保留它的耐久；若用画具，额外发现一条线索。' }, base: { health: 4, stamina: 4, sanity: 4, strength: 4, agility: 6, perception: 7, luck: 7, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
+  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '眠羊织梦', summary: '神秘行动更稳；每回合首次成功神秘后使一名对手陷入沉迷。', detail: '神秘与理智行动获得稳定加成；每回合第一次成功的神秘行动使一名对手陷入「沉迷」——其下回合敏捷与感知临时下降，并暴露一条线索给你。' }, base: { health: 4, stamina: 3, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
 ];
 HEROES.push(...NEW_HEROES);
 
@@ -1070,6 +1070,10 @@ function secretMarketOpen(player) { return player.inventory.filter(item => ITEMS
 
 const ITEM_CATEGORY_ORDER = ['equipment', 'active', 'passive', 'reactive', 'relic'];
 const itemCategoryOf = item => ITEMS[item?.id]?.category || 'active';
+/* 【msg8 §7】三大生命值上限。原版为 10，方案要求压到 5（更严厉的失败惩罚）。
+   注意：HELL/破城等处描述里的「3 点」等数值是按上限 5 的尺度写的。 */
+const MAX_VITAL = 5;
+const VITAL_KEYS = ['health', 'stamina', 'sanity'];
 const BAG_CAPACITY = 10;
 const OTHER_ITEM_CAPACITY = 8;
 function itemCapacityGroup(itemId) {
@@ -2641,9 +2645,9 @@ function renderVitals(player) {
   $(`#vitals-${player.index}`).innerHTML = values.map(([key, label, color]) => {
     const value = player.stats[key];
     const tier = vitalTier(value);
-    return `<div class="vital tier-${tier.key}" title="${label} ${value}/10 · ${tier.label}">
+    return `<div class="vital tier-${tier.key}" title="${label} ${value}/${MAX_VITAL} · ${tier.label}">
       <label><span>${label}</span><b>${value}</b><em class="tier-mark">${tier.icon}${tier.label}</em>${deltaBadge(player, key)}</label>
-      <i style="--value:${clamp(value, 0, 10) * 10}%;--bar:${color}"></i></div>`;
+      <i style="--value:${clamp(value, 0, MAX_VITAL) / MAX_VITAL * 100}%;--bar:${color}"></i></div>`;
   }).join('');
 }
 
@@ -3882,17 +3886,17 @@ function makeGuardOption(player) {
 
 function contextualActions(player) {
   const pool = [];
-  if (player.stats.health <= 4) pool.push(option('靠着墙压住伤口', '先活下来，再向房间索取答案', 'sanity', 1, 'use', ['heal', 'guard']));
-  if (player.stats.sanity <= 4) pool.push(option('重复自己的名字保持清醒', '某个音节正在慢慢变陌生', 'sanity', 1, 'mystery', ['curse', 'mystery']));
+  if (player.stats.health <= 2) pool.push(option('靠着墙压住伤口', '先活下来，再向房间索取答案', 'sanity', 1, 'use', ['heal', 'guard']));
+  if (player.stats.sanity <= 2) pool.push(option('重复自己的名字保持清醒', '某个音节正在慢慢变陌生', 'sanity', 1, 'mystery', ['curse', 'mystery']));
   if (player.inventory.length) pool.push(option('拿出最合适的随身物试探房间', '旧东西也可能找到新的用途', 'luck', 2, 'use', ['mechanism', 'search']));
   // 末段节奏按所选赛程等比缩放：6 局从第 5 回合起，12 局从第 10 回合起。
   if (state.round >= FINAL_ROUND()) pool.push(option('抢在钟声前完成危险尝试', '城堡留给你的时间越来越少', 'agility', 3, 'run', ['escape', 'clock']));
   if (player.curses.length) pool.push(option('顺着诅咒的刺痛寻找源头', '疼痛正在替你指路', 'sanity', 3, 'mystery', ['curse', 'rune']));
   // 恢复手段必须比"濒死"更早出现，否则局势无法挽回。生命/体力偏低时就应当能看到。
-  if (player.stats.health <= 6 || player.stats.stamina <= 4) {
+  if (player.stats.health <= 3 || player.stats.stamina <= 2) {
     pool.push(option('停下脚步按住伤口', '先把血流止住，再考虑今晚的输赢', 'stamina', 1, 'use', ['heal', 'guard']));
   }
-  if (player.stats.sanity <= 6) {
+  if (player.stats.sanity <= 3) {
     pool.push(option('数着墙上的砖块稳住呼吸', '有些数字还认得你', 'perception', 1, 'mystery', ['heal', 'mystery']));
   }
   const negativeStates = player.statuses.filter(status => ['受伤', '疲惫', '动摇', '暴露', '虚弱', '恐惧'].includes(status));
@@ -3959,7 +3963,7 @@ function usedEntryIds(player, exceptSlot = 0) {
 const OPTION_MIN = 2, OPTION_DEFAULT = 3, OPTION_MAX = 4, OPTION_FOUR_RATE_CAP = .15;
 
 function optionSituation(player, targets, itemPool) {
-  const weak = player.stats.health <= 4 || player.stats.stamina <= 3 || player.stats.sanity <= 4;
+  const weak = player.stats.health <= 2 || player.stats.stamina <= 2 || player.stats.sanity <= 2;
   const specialRoom = ['reward', 'secret', 'dungeon'].includes(player.room);
   const hunted = state.players.some(other => other.id !== player.id && other.room === player.room
     && (other.hatred?.[player.id] || 0) >= 2);
@@ -4076,7 +4080,7 @@ function generateOptions(player, slot = 1) {
     id: `dungeon-search-${state.round}-${slot}`, kind: 'dungeonSearch', stat: 'perception', risk: 2,
     tags: ['search', 'curse'], text: '【地牢专属】探查旧锁链', flavor: '可能找到狱影锁环、关键筹码或逃生线索'
   } });
-  if (Math.min(player.stats.health, player.stats.stamina, player.stats.sanity) <= 5) forced.push({ rank: 1.2, entry: {
+  if (Math.min(player.stats.health, player.stats.stamina, player.stats.sanity) <= 2) forced.push({ rank: 1.2, entry: {
     id: `loot-rest-${state.round}-${slot}`, kind: 'gearChoice', choice: 'rest', stat: 'sanity', risk: 1,
     tags: ['heal', 'guard'], text: '【生存恢复】停下休整', flavor: '恢复最低的一项生存资源2点，并清除一项负面状态'
   } });
@@ -4134,7 +4138,7 @@ function routeScore(player, route) {
 function actionScore(player, entry) {
   const target = entry.targetId ? state.players.find(other => other.id === entry.targetId) : null;
   const itemBonus = getMatchingItems(player, entry).length ? 3.5 : 0;
-  const lowHealth = player.stats.health <= 4 || player.stats.stamina <= 3;
+  const lowHealth = player.stats.health <= 2 || player.stats.stamina <= 2;
 let score = (statOr(player.stats[entry.stat], statOr(player.stats.luck, 5))) * .65 - entry.risk * .8 + itemBonus + rng.next() * 3;
   if (entry.kind === 'attack') {
     if (!target || target.room !== player.room || target.collapsed) return -Infinity;
@@ -4142,7 +4146,7 @@ let score = (statOr(player.stats[entry.stat], statOr(player.stats.luck, 5))) * .
     const hatred = player.hatred[target.id] || 0;
     const crowd = player.room === 'ruinConvergence' ? 0 : Math.max(0, state.players.filter(candidate => !candidate.collapsed && candidate.room === player.room && candidate.room !== 'dungeon' && !candidate.skippedThisRound).length - 2);
     const expectedChance = calculateAttackChance(player, target, entry, chooseBestItem(player, entry), { spectatorCount: crowd }).chance;
-    score += lowHealth ? -12 : 2 + expectedChance * 12 + advantage * .35 + (target.stats.health <= 4 ? 5 : 0) + hatred * .8 - crowd * 1.5;
+    score += lowHealth ? -12 : 2 + expectedChance * 12 + advantage * .35 + (target.stats.health <= 2 ? 5 : 0) + hatred * .8 - crowd * 1.5;
   }
   if (entry.kind === 'guard') score += lowHealth ? 10 : 2 + (player.inventory.some(item => ITEMS[item.id].category === 'reactive') ? 5 : 0);
   if (entry.kind === 'gearChoice') {
@@ -4163,7 +4167,7 @@ let score = (statOr(player.stats[entry.stat], statOr(player.stats.luck, 5))) * .
     if (!item || !itemUsable(player, item).ok) return -Infinity;   // 人机不会选择不可用道具
     const effect = ITEMS[item.id].effect || {};
     if (effect.kind === 'heal') score += lowHealth ? 16 : -4;
-    else if (effect.kind === 'soothe') score += player.stats.sanity <= 4 ? 14 : -2;
+    else if (effect.kind === 'soothe') score += player.stats.sanity <= 2 ? 14 : -2;
     else if (effect.kind === 'teleport') score += 5;
     else if (effect.kind === 'returnHome') score += 2;
     else if (effect.kind === 'smoke') score += 3;
@@ -4766,9 +4770,9 @@ function applyChanges(player, changes, result = null) {
   player.roundDeltas = player.roundDeltas || {};
   player.gainRemainder = player.gainRemainder || {};
   for (const [key, value] of changes) {
-    const vital = ['health', 'stamina', 'sanity'].includes(key);
+    const vital = VITAL_KEYS.includes(key);
     const core = ['strength', 'agility', 'perception', 'luck', 'intimidation', 'stealth'].includes(key);
-    const max = vital ? 10 : ['keys', 'clues'].includes(key) ? 99 : core ? CORE_STAT_SOFT_CAP : 100;
+    const max = vital ? MAX_VITAL : ['keys', 'clues'].includes(key) ? 99 : core ? CORE_STAT_SOFT_CAP : 100;
     const before = player.stats[key] || 0;
     let adjusted = value;
     if (value > 0 && (core || vital)) {
@@ -4812,7 +4816,7 @@ function raiseStatTo(player, key, target, result = null) {
   const before = Number(player.stats[key] || 0);
   const wanted = Number(target);
   if (!Number.isFinite(wanted)) return 0;
-  const max = ['health', 'stamina', 'sanity'].includes(key) ? 10 : ['keys', 'clues'].includes(key) ? 99
+  const max = VITAL_KEYS.includes(key) ? MAX_VITAL : ['keys', 'clues'].includes(key) ? 99
     : CORE_STAT_KEYS.includes(key) ? CORE_STAT_SOFT_CAP : 100;
   const after = clamp(Math.max(before, wanted), 0, max);
   if (after === before) return 0;
@@ -7142,7 +7146,8 @@ function scoreBreakdown(player) {
   /* 只读常驻值：临时 Buff 可以在行动里生效，但不能靠结算前开一下就抬高总分。 */
   const core = ['strength', 'agility', 'perception', 'luck', 'intimidation', 'stealth']
     .reduce((sum, key) => sum + Math.log1p(Math.max(0, standingStat(player, key))) / Math.log(101), 0) / 6 * 60;
-  const vitals = ['health', 'stamina', 'sanity'].reduce((sum, key) => sum + player.stats[key], 0) / 30 * 28;
+  /* 【msg8 §7】生命值上限改 5 后，满分基数 = 3×5 = 15，保持满值≈28 分的同尺度。 */
+  const vitals = ['health', 'stamina', 'sanity'].reduce((sum, key) => sum + player.stats[key], 0) / (MAX_VITAL * 3) * 28;
   const keyItems = Math.min(9, player.stats.keys * 2.5 + player.stats.clues * .7
     + player.inventory.filter(item => ITEMS[item.id].category === 'relic')
       .reduce((sum, item) => sum + (ITEMS[item.id].value || 1) * 2.5, 0));
