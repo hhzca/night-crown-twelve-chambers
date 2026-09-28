@@ -214,11 +214,115 @@ const NEW_HEROES = [
   { name: '双生', title: '相拥旅者', artSlug: '02-embracing-duo', trait: '互相守护与疗愈', kit: ['styptic', 'mirrorCharm'], talent: { id: 'embraceWard', name: '共担微光', summary: '每回合首次受到伤害时保住一口气。', detail: '每回合首次在普通行动中受伤时，立即恢复一点生命并消除疲惫。两人是同一可玩单位。' }, base: { health: 9, stamina: 6, sanity: 7, strength: 4, agility: 4, perception: 6, luck: 6, intimidation: 5, stealth: 5, keys: 0, clues: 0 } },
   { name: '绯影', title: '蒙面潜行者', artSlug: '03-black-red-hood', trait: '暗处行动与脱身', kit: ['smokeVial', 'lockpick'], talent: { id: 'redVeil', name: '赤影换位', summary: '潜行行动更稳，失败时也能掩去踪迹。', detail: '隐藏与敏捷行动获得稳定加成；每回合首次潜行失败移除暴露并恢复一点体力。' }, base: { health: 6, stamina: 8, sanity: 7, strength: 4, agility: 8, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 } },
   { name: '蔷薇', title: '温室守护者', artSlug: '04-green-rose', trait: '疗愈与荆棘通路', kit: ['thornSeed', 'tonic'], talent: { id: 'roseBloom', name: '蔷薇再生', summary: '每回合首次恢复行动会再补一点体力。', detail: '每回合第一次进行恢复或净化行动，额外恢复一点体力，并记下花园通路。' }, base: { health: 7, stamina: 7, sanity: 8, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '冠誓', summary: '威慑更稳，首次成功可建立防护。', detail: '威慑行动获得稳定加成；每回合首次威慑成功后获得一层防护。' }, base: { health: 8, stamina: 7, sanity: 7, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
+  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '赤冠号令', summary: '威慑更稳；每回合首次成功威慑后标记一名对手。', detail: '威慑行动获得稳定加成；每回合第一次成功威慑后标记一名在场对手——被标记者下回合行动风险提高，你对其夺取 / 攻击获得加成。' }, base: { health: 8, stamina: 7, sanity: 7, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
   { name: '彩墨', title: '斑斓画师', artSlug: '06-rainbow-painter', trait: '道具保养与发现', kit: ['paintVial', 'echoBell'], talent: { id: 'colorKeeper', name: '调色匣', summary: '每回合首次动用道具不磨损。', detail: '每回合首次真正消耗道具时保留它的耐久；若用画具，额外发现一条线索。' }, base: { health: 7, stamina: 7, sanity: 7, strength: 4, agility: 6, perception: 7, luck: 7, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '梦羊低语', summary: '神秘行动更稳，成功时驱散动摇。', detail: '神秘与理智行动获得稳定加成；每回合首次成功的神秘行动移除动摇或恐惧并恢复一点理智。' }, base: { health: 7, stamina: 6, sanity: 9, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
+  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '眠羊织梦', summary: '神秘行动更稳；每回合首次成功神秘后使一名对手陷入沉迷。', detail: '神秘与理智行动获得稳定加成；每回合第一次成功的神秘行动使一名对手陷入「沉迷」——其下回合敏捷与感知临时下降，并暴露一条线索给你。' }, base: { health: 7, stamina: 6, sanity: 9, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
 ];
 HEROES.push(...NEW_HEROES);
+
+/* 【msg8 §4】每角色一个主动技能（与被动 talent 并存）。
+   limit：oncePerGame 每局 1 次 / oncePerStage 每图 1 次 / every3 每 3 回合 1 次。
+   触发条件：限次通过 + 不在冷却 + 当前处于选择阶段。目标类技能用 intent.targetId。 */
+const HERO_ACTIVES = {
+  bellEcho: { name: '铁钟回响', limit: 'oncePerGame', desc: '下回合所有强攻额外 +3 力量判定。', needsTarget: false },
+  sporeBlend: { name: '孢子调和', limit: 'oncePerStage', desc: '立刻净化自身全部诅咒，并恢复 1 点理智。', needsTarget: false },
+  lampfoot: { name: '无灯脚步', limit: 'every3', desc: '本回合下次夺取失败可重掷一次（隐藏判定豁免）。', needsTarget: false },
+  flowerTrace: { name: '花径留痕', limit: 'oncePerStage', desc: '标记一名对手，立即获取一条线索，并获得 1 点感知。', needsTarget: true },
+  embraceWard: { name: '共担微光', limit: 'oncePerGame', desc: '立即恢复 1 点生命，并解除「受伤」「疲惫」。', needsTarget: false },
+  redVeil: { name: '赤影换位', limit: 'every3', desc: '本回合脱身 / 潜行更稳，立刻抹去暴露并 +1 体力。', needsTarget: false },
+  roseBloom: { name: '蔷薇再生', limit: 'oncePerStage', desc: '立即回满 3 点体力，并记下花园通路。', needsTarget: false },
+  crownOath: { name: '赤冠号令', limit: 'oncePerGame', desc: '标记一名在场对手；本回合对其夺取失败可重掷一次。', needsTarget: true },
+  colorKeeper: { name: '调色匣', limit: 'oncePerStage', desc: '立即获得一条线索，并把一件同房目标的一件道具「上色」——使其暴露。', needsTarget: true },
+  dreamShepherd: { name: '眠羊织梦', limit: 'oncePerGame', desc: '使一名对手「沉迷」：本回合其逃脱 / 潜行再难成立，并暴露一条线索给你。', needsTarget: true }
+};
+
+function heroActiveOf(player) {
+  const id = HEROES[player?.hero]?.talent?.id;
+  return id ? (HERO_ACTIVES[id] || null) : null;
+}
+/* 主动技能当前是否可放：限次 + 冷却 + 阶段 + 目标。 */
+function activeAvailability(player) {
+  const active = heroActiveOf(player);
+  if (!active) return { ok: false, reason: '该角色没有主动技能' };
+  if (!isSelectPhase()) return { ok: false, reason: '当前阶段不能释放技能' };
+  if (playerCannotAct(player)) return { ok: false, reason: '本回合已无法行动' };
+  const used = player.activeUsed?.[active.name] || 0;
+  if (active.limit === 'oncePerGame' && used >= 1) return { ok: false, reason: '本局已用过' };
+  if (active.limit === 'oncePerStage' && used >= 1 && player.activeStageId === state.stageId) return { ok: false, reason: '本图已用过' };
+  if (active.limit === 'every3' && (player.activeCooldown || 0) > 0) return { ok: false, reason: `冷却中（还剩 ${player.activeCooldown} 回合）` };
+  if (active.needsTarget && !activeTargetsFor(player).length) return { ok: false, reason: '当前没有合法目标' };
+  return { ok: true, reason: '' };
+}
+function activeTargetsFor(player) {
+  return state.players.filter(other => other.id !== player.id && !other.collapsed
+    && other.room === player.room && other.room !== 'dungeon' && other.room !== 'reward');
+}
+/* 释放主动技能：走与道具一致的面板 / 确认流程，无需占行动槽。 */
+function useActiveSkill(playerIndex, targetId = null) {
+  const player = state.players[playerIndex];
+  if (!player || player.control !== 'human') return false;
+  const avail = activeAvailability(player);
+  if (!avail.ok) return false;
+  if (!openActivePanel(playerIndex, targetId)) return false;
+  return confirmActiveSkill(playerIndex);
+}
+function applyActiveSkill(player, active, target, result) {
+  player.activeUsed = player.activeUsed || {};
+  player.activeUsed[active.name] = (player.activeUsed[active.name] || 0) + 1;
+  player.activeStageId = state.stageId;
+  if (active.limit === 'every3') player.activeCooldown = 3;
+  switch (active.name) {
+    case '铁钟回响':
+      player.buffs = [...(player.buffs || []), { id: 'active-bell', name: '铁钟回响', rounds: 1, statKey: 'strength', delta: 3, source: '主动技能' }];
+      result.consequences.push('钟声在你胸中回响：下回合所有强攻获得额外力量判定。');
+      break;
+    case '孢子调和':
+      if (player.curses.length) { result.consequences.push(`孢子散开，${player.curses.length} 道诅咒被中和。`); player.curses = []; }
+      else result.consequences.push('孢子散开，你身上没有可中和的诅咒。');
+      applyChanges(player, [['sanity', 1]], result);
+      break;
+    case '无灯脚步':
+      player.buffs = [...(player.buffs || []), { id: 'active-lamp', name: '无灯脚步', rounds: 1, tag: 'seizeReroll', source: '主动技能' }];
+      result.consequences.push('你踏进没有光的缝隙：本回合下一次夺取失手还会再试一次。');
+      break;
+    case '花径留痕':
+      applyChanges(player, [['clues', 1], ['perception', 1]], result);
+      if (target) { target.marks = uniqueAdd(target.marks, `花痕·${player.label}`); result.consequences.push(`花径缠上${target.label}，你循着它多握到一条线索。`); }
+      break;
+    case '共担微光':
+      applyChanges(player, [['health', 1]], result);
+      removeStatuses(player, ['受伤', '疲惫'], result);
+      result.consequences.push('微光替你与同伴分担，伤口与疲惫都退了半分。');
+      break;
+    case '赤影换位':
+      removeStatuses(player, ['暴露'], result);
+      applyChanges(player, [['stamina', 1]], result);
+      player.buffs = [...(player.buffs || []), { id: 'active-redveil', name: '赤影换位', rounds: 1, tag: 'stealthSteady', source: '主动技能' }];
+      result.consequences.push('你与自己的影子换了位，踪迹和疲惫一起被抹去。');
+      break;
+    case '蔷薇再生':
+      applyChanges(player, [['stamina', 3]], result);
+      player.flags = uniqueAdd(player.flags, 'gardenRoute');
+      result.consequences.push('蔷薇在伤口上开花，三口气回来了，花园也认下这条路。');
+      break;
+    case '赤冠号令':
+      if (target) { target.marks = uniqueAdd(target.marks, '赤冠号令'); player.activeMarked = target.id; result.consequences.push(`赤冠号令指向${target.label}：本回合对其夺取失手还会再试一次。`); }
+      break;
+    case '调色匣':
+      applyChanges(player, [['clues', 1]], result);
+      if (target && target.inventory.length) { const it = pick(target.inventory); target.statuses = uniqueAdd(target.statuses, '暴露'); result.consequences.push(`你给${ITEMS[it.id].name}上了一层色，${target.label}的行踪随之暴露。`); }
+      else result.consequences.push('调色匣替你记下一条线索。');
+      break;
+    case '眠羊织梦':
+      if (target) { target.buffs = [...(target.buffs || []), { id: 'active-dream', name: '沉迷', rounds: 1, tag: 'dazed', delta: -2, source: '眠羊织梦' }]; result.consequences.push(`${target.label}陷入沉迷，逃不开了。`); }
+      applyChanges(player, [['clues', 1]], result);
+      break;
+    default:
+      result.consequences.push(`${active.name}在这一刻没有产生额外效果。`);
+  }
+}
+/* 每回合开始时递减主动技能冷却。 */
+function tickActiveCooldown(player) { player.activeCooldown = Math.max(0, (player.activeCooldown || 0) - 1); }
 
 /* ---------------------------------------------------------------------------
  * 道具系统
@@ -2037,6 +2141,8 @@ function makePlayer(index, heroIndex, control) {
     lastRewardRound: -10, travelNotes: [], hatred: {}, gold: 0,
     routePlan: [], goal: null, injuries: [], protection: 0, dungeonHistory: [],
     actionPoints: ACTION_POINTS_PER_ROUND, talentUsedThisRound: false, collapsed: false,
+    /* 【msg8 §4】主动技能：每角色一个，按 perGame / perStage / every3 限次。 */
+    activeUsed: {}, activeStageId: null, activeCooldown: 0,
     npcRelation: {}, wardCharges: 0, chainKeyUsed: false, quickUsedThisRound: false,
     passiveWearNotes: [], incomingStealPenalty: 0, scoutInfo: null, phaseStall: 0, roundDeltas: {},
     gainRemainder: {}, dungeonActionsLeft: 0, dungeonRelicSeen: false, lastDungeonSearchRound: -10,
@@ -2570,6 +2676,7 @@ function renderInventory(player) {
     <span class="bag-key-line"><b>金钱/关键</b> <i>钥匙 ${player.stats.keys || 0}</i><i>线索 ${player.stats.clues || 0}</i> · ${compactCounts.relic}件</span>
     <button data-bag-open="${player.index}">完整行囊 <kbd>${keyLabel(keyRowOf(player.index).bag)}</kbd></button>
     <button data-quick-heal="${player.index}" ${bestHealItem(player) ? '' : 'disabled title="没有可用的治疗道具"'} class="quick-heal-btn" style="border-color:#7bc997;color:#7bc997">快捷治疗 <kbd>H</kbd></button>
+    ${(() => { const a = activeAvailability(player); const act = heroActiveOf(player); if (!act) return ''; const panel = player.turn?.activePanel; if (panel) { const tgts = act.needsTarget ? activeTargetsFor(player).map(t => `<button data-skill-target="${t.id}" data-player-index="${player.index}" class="skill-target ${panel.targetId === t.id ? 'on' : ''}">${t.label}${panel.targetId === t.id ? ' ✓' : ''}</button>`).join('') : ''; return `<span class="skill-panel"><b>${act.name}</b><small>${act.desc}</small>${tgts}<button data-skill-confirm="${player.index}" ${(!act.needsTarget || panel.targetId) ? '' : 'disabled'} >确认释放</button><button data-skill-cancel="${player.index}">取消</button></span>`; } return `<button data-skill-open="${player.index}" ${a.ok ? '' : `disabled title="${a.reason}"`} class="active-skill-btn" style="border-color:#d9b458;color:#d9b458">${act.name}</button>`; })()}
   </div>`;
   const bonusHost = $(`#systemBonuses-${player.index}`);
   if (bonusHost) {
@@ -4297,6 +4404,8 @@ function resetTurnState(player) {
   player.roundDeltas = {};
   player.quickUsedThisRound = false;
   player.talentUsedThisRound = false;
+  /* 【msg8 §4】主动技能冷却每回合递减一次。 */
+  player.activeCooldown = Math.max(0, (player.activeCooldown || 0) - 1);
   player.actionPoints = slotCountForStage(state.stageId);
 }
 
@@ -5613,7 +5722,10 @@ function rollOutcome(player, entry, item = null) {
     + (player.statuses.includes('动摇') && ['sanity', 'intimidation'].includes(entry.stat) ? .9 : 0)
     + (player.statuses.includes('暴露') && entry.stat === 'stealth' ? 1.1 : 0)
     + Math.min(1.2, player.curses.length * .35);
-  const debuffPenalty = Math.max(0, Math.min(2.2, rawPenalty) - (hasGear(player, 'gear_veil') ? .5 : 0));
+  let debuffPenalty = Math.max(0, Math.min(2.2, rawPenalty) - (hasGear(player, 'gear_veil') ? .5 : 0));
+  /* 【msg8 §4-A】眠羊织梦的「沉迷」：被打上的对手本回合逃脱 / 潜行一再失手。 */
+  const dazed = (player.buffs || []).some(b => b.tag === 'dazed');
+  if (dazed && ['stealth', 'agility'].includes(entry.stat)) debuffPenalty += 1.4;
   const mitigation = item && ITEMS[item.id].useTags.some(tag => ['heal', 'curse', 'guard'].includes(tag)) ? Math.min(debuffPenalty, ITEMS[item.id].bonus * .45) : 0;
   const systemBonus = Math.min(2.4, Object.keys(GEAR_SYSTEMS).reduce((total, key) => {
     const spec = GEAR_SYSTEMS[key];
@@ -5670,12 +5782,30 @@ function applyTalentAfterAction(player, entry, outcome, result, healthBefore) {
     player.flags = uniqueAdd(player.flags, 'gardenRoute');
     note = '蔷薇再生：花藤替你撑起一口气，花园也认下这条路。';
   } else if (talent === 'crownOath' && succeeded && entry.stat === 'intimidation') {
-    player.protection = Math.max(1, player.protection);
-    note = '冠誓：这次压制让你建立了一层防护。';
+    /* 【msg8 §4-A】赤冠号令：控场压制——标记一名在场对手，本回合对其夺取 / 攻击获得加成。 */
+    const foes = state.players.filter(other => other.id !== player.id && !other.collapsed && other.room === player.room);
+    const target = foes.sort((a, b) => (b.stats.intimidation || 0) - (a.stats.intimidation || 0))[0];
+    if (target) {
+      target.marks = uniqueAdd(target.marks, `赤冠号令·${player.label}`);
+      player.activeMarked = target.id;
+      note = `赤冠号令：${target.label}被你的威慑压住，行动风险陡增。`;
+    } else {
+      player.protection = Math.max(1, player.protection);
+      note = '冠誓：这次压制让你建立了一层防护。';
+    }
   } else if (talent === 'dreamShepherd' && succeeded && entry.tags?.includes('mystery')) {
-    removeStatuses(player, ['动摇', '恐惧'], result);
-    applyChanges(player, [['sanity', 1]], result);
-    note = '梦羊低语：惊惧退去，你的心神回到原处。';
+    /* 【msg8 §4-A】眠羊织梦：干扰预知——使一名对手沉迷，并暴露一条线索。 */
+    const foes = state.players.filter(other => other.id !== player.id && !other.collapsed);
+    const target = foes.sort((a, b) => (player.room === a.room ? -1 : 1) - (player.room === b.room ? -1 : 1))[0];
+    if (target) {
+      target.buffs = [...(target.buffs || []), { id: `dream-${state.turnSerial}`, name: '沉迷', rounds: 1, tag: 'dazed', delta: -2, source: '眠羊织梦' }];
+      applyChanges(player, [['clues', 1]], result);
+      note = `眠羊织梦：${target.label}陷入沉迷，你也摸到了一条线索。`;
+    } else {
+      removeStatuses(player, ['动摇', '恐惧'], result);
+      applyChanges(player, [['sanity', 1]], result);
+      note = '梦羊低语：惊惧退去，你的心神回到原处。';
+    }
   }
   if (note) { player.talentUsedThisRound = true; result.consequences.push(note); }
 }
@@ -7514,6 +7644,52 @@ function confirmItemUse(playerIndex) {
   return true;
 }
 
+/* 【msg8 §4】主动技能面板：与道具面板同构，但独立于行动槽（不占这一步）。 */
+function openActivePanel(playerIndex, targetId = null) {
+  const player = state.players[playerIndex];
+  if (!player || player.control !== 'human' || state.resolving) return false;
+  const avail = activeAvailability(player);
+  if (!avail.ok) { player.turn.notice = `技能不可用：${avail.reason}`; renderAll(); return false; }
+  player.turn.activePanel = { targetId: targetId || null };
+  renderAll();
+  return true;
+}
+function closeActivePanel(playerIndex) {
+  const player = state.players[playerIndex];
+  if (!player?.turn?.activePanel) return false;
+  player.turn.activePanel = null;
+  renderAll();
+  return true;
+}
+function selectActiveTarget(playerIndex, targetId) {
+  const panel = state.players[playerIndex]?.turn?.activePanel;
+  if (!panel) return false;
+  panel.targetId = targetId;
+  renderAll();
+  return true;
+}
+function confirmActiveSkill(playerIndex) {
+  const player = state.players[playerIndex];
+  const panel = player?.turn?.activePanel;
+  if (!panel) return false;
+  const active = heroActiveOf(player);
+  const avail = activeAvailability(player);
+  if (!active || !avail.ok) { closeActivePanel(playerIndex); return false; }
+  let target = null;
+  if (active.needsTarget) {
+    target = activeTargetsFor(player).find(t => t.id === panel.targetId);
+    if (!target) return false;
+  }
+  const result = emptyResult('special', active.name);
+  applyActiveSkill(player, active, target, result);
+  player.turn.activePanel = null;
+  player.quickUsedThisRound = false; // 技能不消耗本回合快速次数
+  player.turn.notice = result.consequences.join(' ');
+  if (typeof audio !== 'undefined' && audio.action) audio.action('use', playerIndex);
+  renderAll();
+  return true;
+}
+
 /* ---------------------------------------------------------------------------
  * NPC 对话交互：逐字显示 → 第一次点击补全，第二次点击下一句，可选跳过
  * ---------------------------------------------------------------------------
@@ -8004,6 +8180,17 @@ function handleKeydown(event) {
     return;
   }
 
+  /* 【msg8 §4】主动技能：选择阶段按 R 打开技能面板 / 再次按 R 关闭。 */
+  if (event.code === 'KeyR' && isSelectPhase()) {
+    const pidx = state.players.findIndex(p => p.control === 'human' && !playerCannotAct(p) && isSelectPhase());
+    if (pidx >= 0) {
+      event.preventDefault();
+      const player = state.players[pidx];
+      if (player.turn?.activePanel) closeActivePanel(pidx); else openActivePanel(pidx);
+    }
+    return;
+  }
+
   /* 阶段演出期间只认「跳过」：空格 / 回车都走和看完一样的出口，
      其它输入一律不穿透到下面的玩法层。 */
   if (state.phase === 'stage_transition') {
@@ -8334,6 +8521,30 @@ const layerAdvance = target.closest('[data-layer-advance]');
   if (quickHeal) {
     const index = playerIndexOf(quickHeal);
     if (humanAt(index)) doQuickHeal(index);
+    return;
+  }
+  const skillOpen = target.closest('[data-skill-open]');
+  if (skillOpen) {
+    const index = playerIndexOf(skillOpen);
+    if (humanAt(index)) openActivePanel(index);
+    return;
+  }
+  const skillTarget = target.closest('[data-skill-target]');
+  if (skillTarget) {
+    const index = playerIndexOf(skillTarget);
+    if (humanAt(index)) selectActiveTarget(index, skillTarget.dataset.skillTarget);
+    return;
+  }
+  const skillConfirm = target.closest('[data-skill-confirm]');
+  if (skillConfirm) {
+    const index = playerIndexOf(skillConfirm);
+    if (humanAt(index)) confirmActiveSkill(index);
+    return;
+  }
+  const skillCancel = target.closest('[data-skill-cancel]');
+  if (skillCancel) {
+    const index = playerIndexOf(skillCancel);
+    if (humanAt(index)) closeActivePanel(index);
     return;
   }
   const talkOpen = target.closest('[data-talk-open]');
