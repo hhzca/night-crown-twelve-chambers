@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#191827"/>
+      <stop offset="1" stop-color="#0c0b13"/>
+    </linearGradient>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0v64" fill="none" stroke="#8f7fb822" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect width="1280" height="720" fill="url(#grid)"/>
+  <g fill="none" stroke="#c9a577" stroke-opacity=".55" stroke-width="3">
+    <rect x="330" y="196" width="620" height="330" rx="10"/>
+    <path d="M330 196l620 330M950 196L330 526"/>
+  </g>
+  <text x="640" y="150" text-anchor="middle" fill="#e6d3b0" font-family="Georgia, 'Microsoft YaHei', serif" font-size="42">素材待补</text>
+  <text x="640" y="600" text-anchor="middle" fill="#b9adc6" font-family="'Microsoft YaHei', sans-serif" font-size="22">这间房还没有独立场景图，当前显示的是明确的占位，而不是别处的房间。</text>
+</svg>

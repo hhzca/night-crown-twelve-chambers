@@ -1,0 +1,42 @@
+.world-hud{padding:8px 0;color:#e3c989;font-size:12px;letter-spacing:.08em}
+.world-choice{z-index:10020!important;background:#050812db;backdrop-filter:blur(8px)}
+.world-choice .complete-card{max-width:640px;width:min(92vw,640px);padding:30px;border:1px solid #9e8756;border-radius:16px;background:linear-gradient(140deg,#171e2e,#191525);box-shadow:0 25px 110px #000}
+.world-choice button{display:block;width:100%;margin:10px 0;padding:13px 18px;text-align:left;border:1px solid #64738a;color:#eee1c1;background:#222c40;border-radius:8px;cursor:pointer}
+.world-choice button:hover,.world-choice button:focus{background:#36425b;border-color:#ddc589}
+.world-choice .world-cancel{background:transparent;color:#aeb7c7}
+.world-options{max-height:50vh;overflow:auto}
+.stage-cinema{position:fixed;inset:0;z-index:9990;overflow:hidden;pointer-events:none;background:#050812;perspective:900px;animation:cinema-envelope 3.2s both}
+.cinema-old,.cinema-new{position:absolute;inset:0;background-size:cover;background-position:center;filter:brightness(.55)}
+.cinema-new{opacity:0;animation:cinema-arrive 3.2s both}
+.cinema-old{animation:cinema-oldfade 3.2s both}
+.cinema-depth{position:absolute;width:64vw;height:64vw;left:18vw;top:calc(45vh - 32vw);transform:rotateX(56deg) rotateZ(-15deg);transform-style:preserve-3d;opacity:0;animation:well-reveal 3.2s both}
+.cinema-well{position:absolute;inset:8%;border-radius:50%;background:radial-gradient(ellipse,#03040bf5 12%,#131731eb 40%,#43548266 57%,transparent 71%);box-shadow:0 0 95px #53639955}
+.cinema-ring{position:absolute;inset:calc(5% + var(--ring)*5%);border:2px solid #8fa8c06b;border-left-color:#d2b87999;border-bottom-color:#46537738;border-radius:50%;box-shadow:0 0 20px #9ab8df24,inset 0 0 20px #718bc233;transform:translateZ(calc(var(--ring)*-42px));animation:ring-turn 3.2s cubic-bezier(.5,.03,.7,1) both}
+.cinema-ring i{position:absolute;inset:7%;border-radius:50%;border:10px dotted #bdc9d32e}.cinema-ring b,.cinema-ring em{position:absolute;left:46%;color:#cebc8c;font:24px Georgia;top:-16px}.cinema-ring em{top:auto;bottom:-16px}
+.cinema-person{position:absolute;left:var(--from-x);top:58vh;width:125px;height:210px;transform-origin:50% 90%;animation:person-vortex 3.2s cubic-bezier(.45,.05,.8,1) both;animation-delay:var(--cast-delay)}
+.cinema-person .actor{position:relative!important;inset:auto!important;width:100%!important;height:100%!important;transform:none!important;animation:none!important;opacity:1!important;filter:drop-shadow(0 0 12px #b4c9f366)}
+.cinema-person .sprite{animation:none!important;width:100%;height:100%}
+.cinema-shards{position:absolute;inset:0}.cinema-shards i{position:absolute;left:var(--x);top:var(--y);width:45px;height:80px;clip-path:polygon(0 0,100% 28%,34% 100%);background:linear-gradient(35deg,#77879c00,#8cabc075,#1c254773);border:1px solid #b3c4d866;animation:shard-sink 3.2s both;animation-delay:calc(var(--n)*7ms)}
+.cinema-door{display:none;position:absolute;top:0;bottom:0;width:50%;background:linear-gradient(90deg,#090b12,#221c25,#06070b);border:1px solid #a1895644;box-shadow:inset 0 0 100px #05060b}.door-left{left:0}.door-right{right:0}
+.cinema-summit .cinema-depth{transform:rotateX(76deg);top:20vh}.cinema-summit .cinema-person{animation-name:person-rise}.cinema-summit .cinema-old{animation-name:castle-rise}.cinema-summit .cinema-shards i{background:linear-gradient(0deg,transparent,#abbed822);width:2px;height:35vh;clip-path:none;animation-name:wind-rise}
+.cinema-return .cinema-depth{display:none}.cinema-return .cinema-door{display:block;animation:door-fold 3.2s both;transform-origin:left}.cinema-return .door-right{transform-origin:right}.cinema-return .cinema-person{animation-name:person-return}.cinema-return .cinema-shards i{background:#cba96333;animation-name:wind-rise}
+.cinema-finale .cinema-depth{filter:sepia(.6) hue-rotate(310deg);transform:rotateX(0deg) scale(.8);opacity:.5}.cinema-finale .cinema-door{display:block;animation:gate-open 3.2s both}.cinema-finale .door-right{animation-name:gate-open-right}.cinema-finale .cinema-shards i{background:linear-gradient(90deg,transparent,#ac424855);width:3px;height:50vh;clip-path:none}.cinema-finale .cinema-person{animation-name:person-gate}
+#stageTransition.open{z-index:9995;background:transparent!important;pointer-events:none}#stageTransition.open::before,#stageTransition.open::after{display:none}#stageTransition.open button{pointer-events:auto}#stageTransition.open .st-card{background:#080b1680;backdrop-filter:blur(3px)}
+#stageTransition.open .st-layer{display:none}#stageTransition.open .st-copy{align-self:start;margin-top:3vh;padding:8px 24px;background:#090c1770;border-radius:12px;backdrop-filter:blur(3px)}#stageTransition.open .st-copy h2{font-size:34px}
+@keyframes cinema-envelope{0%{opacity:0}10%,90%{opacity:1}100%{opacity:0}}
+@keyframes cinema-arrive{0%,69%{opacity:0;transform:scale(1.12)}90%,100%{opacity:1;transform:scale(1)}}
+@keyframes cinema-oldfade{0%,18%{opacity:1}65%,100%{opacity:0;transform:scale(.7) rotate(-3deg)}}
+@keyframes well-reveal{0%{opacity:0;scale:.2}20%,65%{opacity:1;scale:1}90%,100%{opacity:0;scale:1.6}}
+@keyframes ring-turn{0%{rotate:0deg}100%{rotate:calc(240deg + var(--ring)*65deg)}}
+@keyframes person-vortex{0%,12%{opacity:1;transform:translate(-50%,0) scale(1)}36%{transform:translate(calc(50vw - var(--from-x) - 50%),-15vh) rotate(-12deg) scale(.75,1)}68%,100%{opacity:0;transform:translate(calc(50vw - var(--from-x) - 50%),-39vh) rotate(-35deg) scale(.025,.06)}}
+@keyframes shard-sink{0%,15%{opacity:0;transform:rotate(var(--r)) scale(1)}30%{opacity:.8}75%,100%{opacity:0;left:50%;top:45%;transform:rotate(calc(var(--r) + 150deg)) scale(.05)}}
+@keyframes person-rise{0%,10%{transform:translateX(-50%);opacity:1}65%,100%{transform:translate(-50%,-75vh) scale(.5);opacity:0}}
+@keyframes castle-rise{0%,10%{opacity:1;transform:translateY(0)}70%,100%{opacity:0;transform:translateY(60vh)}}
+@keyframes wind-rise{0%{opacity:0;transform:translateY(30vh)}30%{opacity:.5}85%,100%{opacity:0;transform:translateY(-80vh)}}
+@keyframes door-fold{0%,12%{opacity:0;transform:rotateY(85deg)}45%{opacity:.9;transform:rotateY(0)}75%,100%{opacity:0;transform:rotateY(-85deg)}}
+@keyframes person-return{0%,15%{opacity:1;transform:translateX(-50%)}60%,100%{opacity:0;transform:translate(-50%,-12vh) scale(.45)}}
+@keyframes gate-open{0%,15%{transform:translateX(0);opacity:1}70%,100%{transform:translateX(-100%);opacity:0}}
+@keyframes gate-open-right{0%,15%{transform:translateX(0);opacity:1}70%,100%{transform:translateX(100%);opacity:0}}
+@keyframes person-gate{0%,30%{opacity:1;transform:translateX(-50%)}72%,100%{opacity:0;transform:translate(calc(50vw - var(--from-x) - 50%),-20vh) scale(.15)}}
+.cinema-reduced{animation:cinema-envelope .4s both}.cinema-reduced .cinema-old,.cinema-reduced .cinema-person,.cinema-reduced .cinema-depth,.cinema-reduced .cinema-shards,.cinema-reduced .cinema-door{display:none}.cinema-reduced .cinema-new{animation:none;opacity:1}
+.collapse-cinema{position:fixed;inset:0;z-index:9980;pointer-events:none;background:radial-gradient(ellipse,transparent 20%,#070a1dcc);animation:cinema-envelope 1.5s both}.collapse-cinema p{position:absolute;bottom:15vh;width:100%;text-align:center;color:#d5c79f;letter-spacing:.25em;text-shadow:0 2px 12px #000}.collapse-ripple{position:absolute;inset:15% 22%;border:2px solid #a4bad488;border-radius:50%;box-shadow:0 0 50px #809ed755,inset 0 0 90px #080b19;animation:collapse-ripple 1.5s both}@keyframes collapse-ripple{0%{transform:scale(2);opacity:0}35%{opacity:1}70%,100%{transform:scale(.02) rotate(-110deg);opacity:0}}.reduce-motion .collapse-ripple{animation:none}

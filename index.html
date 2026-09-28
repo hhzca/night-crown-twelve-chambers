@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#080910" />
+  <meta name="description" content="夜冠：十二室——仅在本机运行的双人暗黑策略探索游戏" />
+  <title>夜冠：十二室</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="visuals.css" />
+  <link rel="stylesheet" href="complete.css">
+<link rel="stylesheet" href="world-rules.css">
+<link rel="stylesheet" href="opening-cg.css">
+</head>
+<body>
+  <main class="game-shell" id="gameShell">
+    <header class="topbar">
+      <div class="brand"><span>♛</span><div><b>夜冠：十二室</b><small>LOCAL TWO-SHADOW EDITION</small></div></div>
+      <div class="round-block"><small>回合</small><b><span id="roundNo">1</span> / <span id="roundMax">8</span></b><em id="phaseText">等待入场</em></div>
+      <div class="top-actions">
+        <button id="soundBtn" aria-label="切换声音" title="声音">♫</button>
+        <button id="settingsBtn" aria-label="声音与设置" title="声音与设置">设置</button>
+        <button id="motionBtn" aria-pressed="false" title="减少动态效果">减少动态</button>
+        <button id="helpBtn">规则 / 按键</button>
+        <button id="restartBtn">重开</button>
+      </div>
+    </header>
+
+    <p class="stall-banner hidden" id="stallBanner" role="status"></p>
+
+    <section class="split-board" id="splitBoard" aria-live="polite"></section>
+
+    <footer class="turn-footer">
+      <div class="key-guide"><b>玩家一</b><span id="keyGuideP1">选项 Q W E R</span></div>
+      <p id="globalMessage">两个人只能看见各自当前房间。双方锁定后统一结算。</p>
+      <span class="ready-meter hidden" id="readyMeter" role="status"></span>
+      <button id="continueBtn" class="continue-btn hidden">进入下一回合</button>
+      <div class="key-guide p2"><b>玩家二</b><span id="keyGuideP2">选项 U I O P</span></div>
+    </footer>
+    <p class="action-hint" id="actionHint">选择一条去路</p>
+  </main>
+
+  <main class="fr-shell" id="freeroamShell" aria-hidden="true">
+    <canvas id="freeroamCanvas" width="640" height="360" aria-label="夜行自由移动游戏画面"></canvas>
+    <section class="fr-hud" aria-live="polite">
+      <div class="fr-brand"><b>夜冠 · 夜行</b><span id="frRoom">主楼 · 黑冠大厅</span></div>
+      <div class="fr-clock"><small>天亮前</small><b id="frTick">Ⅰ · 十二</b><i id="frDanger"></i></div>
+      <div class="fr-perf" id="frFps">— fps</div>
+      <div class="fr-vitals" id="frVitals"></div>
+      <div class="fr-actions"><button id="frMapBtn">地图 / 日志 <kbd>Tab</kbd></button><button id="frPauseBtn">暂停 <kbd>Esc</kbd></button></div>
+    </section>
+    <div class="fr-prompt" id="frPrompt"></div><div class="fr-toast" id="frToast"></div>
+    <section class="fr-panel" id="frPanel" aria-hidden="true"></section>
+  </main>
+
+  <section class="title-screen" id="titleScreen">
+    <div class="title-sky" aria-hidden="true">
+      <span class="title-moon"></span>
+      <span class="title-skyline"></span>
+      <span class="title-mist m1"></span>
+      <span class="title-mist m2"></span>
+      <span class="title-candle c1"></span>
+      <span class="title-candle c2"></span>
+      <span class="title-mote" style="--x:12%;--d:19s;--s:3px"></span>
+      <span class="title-mote" style="--x:38%;--d:26s;--s:2px"></span>
+      <span class="title-mote" style="--x:66%;--d:22s;--s:3px"></span>
+      <span class="title-mote" style="--x:84%;--d:31s;--s:2px"></span>
+      <span class="title-figures"></span>
+    </div>
+    <div class="title-card">
+      <span class="title-veil" aria-hidden="true"></span>
+      <small>夜色 · 城堡 · 十二道门</small>
+      <h1>夜冠：十二室</h1>
+      <p class="title-sub">两道视野，一座会移动的城堡。</p>
+      <nav class="title-menu">
+        <button id="titleStart" class="primary">开始游戏</button>
+        <button id="titleHelp">玩法说明</button>
+        <button id="titleSettings">设置</button>
+        <button id="titleCredits">制作名单</button>
+      </nav>
+      <p class="title-foot">本地双人 · 单人对战 · 夜行探索</p>
+    </div>
+  </section>
+
+  <section class="setup closed" id="setup">
+    <div class="setup-card">
+      <div class="setup-copy">
+        <small>PRIVATE · LOCAL · NO NETWORK</small>
+        <h1>夜冠：十二室</h1>
+        <h2>双影同屏版</h2>
+        <p>两名冒险者只能看见自己的当前房间。道路每回合改变，夺取、反制与地牢会让任何一次相遇成为转折。</p>
+        <ul>
+          <li>左右独立视野，双方同步锁定选择</li>
+          <li>每回合两到三个行动点（看阶段）：每次结算后按新状态再选择</li>
+          <li>同房夺取按属性差结算：差距小则双方各损体力，差距大则劣势者进入地牢</li>
+          <li>七套六件体系、通用装备与十格行囊；侧栏会显示已激活的体系加成</li>
+          <li>原版三人完整保留，另有七名新角色，各有自己的能力与初始道具</li>
+          <li>钟声、脚步与呼吸都是这座城堡自己在响</li>
+          <li>完全本地运行，不上传数据、不连接服务器</li>
+        </ul>
+      </div>
+      <div class="setup-controls">
+        <div class="setup-nav"><button id="backToTitle" class="ghost">← 返回标题</button><button id="devToggle" class="ghost dev-toggle" aria-pressed="false" title="开发调试入口（Ctrl+Shift+D）">开发入口</button></div>
+        <div class="experience-switch" role="group" aria-label="选择玩法">
+          <button class="active" data-experience="classic">经典双影</button>
+          <button data-experience="freeroam">夜行 · 自由移动</button>
+        </div>
+        <p class="experience-note" id="experienceNote">两道视野，同步选择，在八回合里争夺夜冠。</p>
+        <div class="mode-switch" role="group" aria-label="游戏模式">
+          <button class="active" data-mode="local">本地双人</button>
+          <button data-mode="ai">玩家 对 人机</button>
+        </div>
+        <div class="bot-count-control">
+          <div><b>城堡中的人机</b><small>独立行动且隐藏其他房间行为；不包含真实玩家</small></div>
+          <div class="bot-count-buttons" role="group" aria-label="人机数量">
+            <button class="active" data-bot-count="2" aria-pressed="true">2</button>
+            <button data-bot-count="3" aria-pressed="false">3</button>
+            <button data-bot-count="4" aria-pressed="false">4</button>
+            <button data-bot-count="5" aria-pressed="false">5</button>
+          </div>
+        </div>
+        <div class="round-count-control">
+          <div><b>初次探索有多长</b><small id="roundHint">短局 6 回合 · 标准 8 回合 · 长局 12 回合，只是第一段；后面还有城堡之巅、重返探索与终局。</small></div>
+			<div class="round-buttons" role="group" aria-label="赛程长度">
+				<button data-rounds="6" aria-pressed="false">短局</button>
+				<button class="active" data-rounds="8" aria-pressed="true">标准</button>
+				<button data-rounds="12" aria-pressed="false">长局</button>
+			</div>
+		</div>
+		<!-- 调试：直接跳到某个阶段与回合。默认隐藏，放在「开发入口」里，
+		     不再占用正常开始界面的主要空间。 -->
+		<div class="dev-panel closed" id="devPanel">
+		<div class="round-count-control" id="debugJumpControl">
+			<div><b>调试 · 直接跳关</b><small id="debugHint">不动就是从头开始；选好阶段与回合再点开始</small></div>
+			<div class="round-buttons" role="group" aria-label="跳到的阶段" id="debugStageButtons">
+				<button class="active" data-stage="">从头开始</button>
+				<button data-stage="summit">城堡之巅</button>
+				<button data-stage="return">重返探索</button>
+				<button data-stage="finale">终局之战</button>
+				<button data-stage="shard">钟楼碎影</button>
+			</div>
+		</div>
+		<div class="round-count-control" id="debugRoundControl">
+			<div><b>调试 · 回合</b><small id="debugRoundHint">进入该阶段后从第几回合开始</small></div>
+			<div class="round-buttons" role="group" aria-label="跳到的回合" id="debugRoundButtons">
+				<button class="active" data-debug-round="1">1</button>
+				<button data-debug-round="2">2</button>
+				<button data-debug-round="3">3</button>
+				<button data-debug-round="4">4</button>
+				<button data-debug-round="6">6</button>
+				<button data-debug-round="8">8</button>
+			</div>
+		</div>
+		</div>
+        <div class="hero-columns">
+          <section class="hero-column">
+            <header><span class="player-dot p1"></span><div><small>PLAYER ONE</small><b>玩家一角色</b></div></header>
+            <div class="hero-cards" data-player="0"></div>
+          </section>
+          <section class="hero-column">
+            <header><span class="player-dot p2"></span><div><small id="p2ModeLabel">PLAYER TWO</small><b id="p2HeroTitle">玩家二角色</b></div></header>
+            <div class="hero-cards" data-player="1"></div>
+          </section>
+        </div>
+        <p class="enter-note">门在另一侧开着，进去就回不了头了。</p>
+        <button class="enter-btn" id="enterBtn">开始游戏 <span>→</span></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="modal" id="helpModal" aria-hidden="true">
+    <section class="help-card">
+      <button class="close" id="closeHelp" aria-label="关闭">×</button>
+      <small>规则与按键</small>
+      <h2>两道视野，三次结算</h2>
+      <ol>
+        <li>这一夜有多长由你在开局时挑：短局、标准、长局。旅行阶段每人只能从今夜让开的几条普通出口里挑一条；那间不存在的奖励房只会在半路上悄悄改写你的目的地。</li>
+        <li>抵达之后，眼前只会摆 2–4 条路，通常是 3 条。看得越清楚、运气越好的人，越容易多看见一条别人看不见的；身上带伤、被关着，或者手里没有合用的东西时，能挑的反而更少。</li>
+        <li>初次探索、城堡之巅、重返探索每回合有三步，两个终局每回合两步；逐步结算，每走一步城堡都会按你现在的状态重新给出选择。一回合里的高强度行动越靠后，额外消耗体力的机会越大。</li>
+        <li>十名角色各有独立天赋。原版皮普、莫斯、诺克斯仍可选择；新角色的能力与初始道具写在选人卡上，游戏中触发时会在结果里说明。</li>
+        <li>主动道具从行囊取用；烟雾瓶可在遭遇时立即脱身。体系装备单独分栏并一直生效，每件装备有独立词条；反应道具在有人扑上来时自己挡一下。</li>
+        <li>每人最多携带十件体系装备、八件其他道具；关键遗物（金钱道具）不限量。体系装备不会损坏，可以在行囊中丢弃；其他道具保留耐久。行动选项会提示可能对应的体系，也可能得到遗物或别的道具；标有“必得恢复道具”的选项一定给补给。</li>
+        <li>同房动手会显示预计夺取率。目标主动防护或反应道具可能挡下攻击；双方同时夺取且势均力敌时各失体力。成功主要夺走关键遗物、钥匙或线索，也会伤害属性和生存资源。</li>
+        <li>入狱后锁链会限制接下来的两次行动，不会拖住别人。惩罚只结算一次；解禁后可从普通出口离开，也能留在地牢寻找稀有的传奇装备。</li>
+        <li>NPC 并非每回合出现。对话结果受属性、装备和关系影响，也可能给出专属秘仪；对话中可以退回其他选项。收集四件夜市商会装备并签订契约，可进入秘密商店；遗物商人还接受关键遗物抽奖。</li>
+        <li>奖励房是这座城堡唯一肯一次给你两格长处的地方；别的地方一次最多挪动一格。就算没有认得这里的遗物，也能带走一份像样的东西；有遗物的话，最里面那一层会整个为你打开。</li>
+        <li>生命 / 体力 / 理智见底时会先变黄再变红，危险的时候画面会跟着抖 —— 顶栏的「减少动态」可以把它关掉。</li>
+        <li>核心属性显示的是「装备后常驻值」，旁边带三角形的表示当前还有临时状态在加成；箭头后面的数字是这一回合的净变化。常驻值 =（基础值 + 永久成长 + 装备固定值）×（1 + 同类百分比之和），生命 / 体力 / 理智不跟着放大。</li>
+        <li>同名装备会有不同的品质与成长档：蓝一件词条、紫两件、金两件外加一个体系独特机制。重复装备会拆成强化材料，行囊满时新装备先放在待定区让你比较替换。每个阶段结束能拿一次三选一成长，其中一张一定匹配你当前的主方向。</li>
+      </ol>
+      <div class="control-table" id="controlTable"></div>
+    </section>
+  </div>
+
+  <div class="stage-transition" id="stageTransition" aria-hidden="true">
+    <div class="st-layer st-layer-back"></div>
+    <div class="st-layer st-layer-front"></div>
+    <div class="st-copy">
+      <small id="stCaption">阶段</small>
+      <h2 id="stTitle"></h2>
+      <p id="stLine"></p>
+    </div>
+    <button class="st-skip" id="stSkip">跳过 <kbd>空格</kbd></button>
+  </div>
+
+  <div class="modal" id="growthModal" aria-hidden="true">
+    <section class="growth-card" role="dialog" aria-labelledby="growthTitle">
+      <small>阶段结算</small>
+      <h2 id="growthTitle">阶段成长</h2>
+      <p class="growth-note">每个阶段结束都能拿到一次成长。至少一个选项匹配你当前的主方向，所以低运气也有下限；能冲多高仍然看词条组合。</p>
+      <div id="growthBody"></div>
+    </section>
+  </div>
+
+  <div class="modal" id="creditsModal" aria-hidden="true">
+    <section class="credits-card">
+      <button class="close" id="closeCredits" aria-label="关闭">×</button>
+      <small>制作名单与素材登记</small>
+      <h2>音乐</h2>
+      <ul class="credits-list">
+        <li><b>终局之战</b>：<a href="https://opengameart.org/content/colossal-boss-battle-theme" target="_blank" rel="noopener">Colossal Boss Battle Theme / Blackmoor Colossus</a>，Matthew Pablo 作曲，<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>。已转为 Ogg Vorbis、调整响度与循环。</li>
+        <li><b>城堡之巅</b>：Determined Pursuit，Emma_MA，CC0。</li>
+        <li><b>重返探索</b>：Inside the Overlords Domain，KarateStudios，CC0。</li>
+        <li><b>钟楼碎影</b>：<a href="https://opengameart.org/content/crystal-cave-mysterious-ambience-seamless-loop" target="_blank" rel="noopener">Crystal Cave + Mysterious Ambience</a>，<a href="https://pixelsphere.org/" target="_blank" rel="noopener">The Cynic Project / cynicmusic</a> 作曲，congusbongus 循环编排，<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>。保留两遍完整循环，调整循环起点、采样率、响度和边界去爆音。</li>
+        <li><b>初次探索</b>：由本作代码实时合成的环境与节奏层，不使用外部音频文件。</li>
+      </ul>
+      <h2>场景</h2>
+      <p class="credits-note">原始城堡沿用既有背景与角色立绘。新增十七张阶段独立场景、十四张重返城堡的变化场景，使用 OpenAI 图像生成工具制作。</p>
+      <h2>运行方式</h2>
+      <p class="credits-note">直接用浏览器打开 best/index.html 即可，纯本地运行，不需要服务器、不需要联网。声音需要先点一下页面才会解锁，这是浏览器的要求。</p>
+      <h2>旅途记录</h2>
+      <p class="credits-note">经典双影在安全节点自动存档，可在“存档 / 返回”中导出备份；夜行进度独立保存。标题页只在有有效存档时显示继续入口。</p>
+    </section>
+  </div>
+
+  <div class="modal" id="settingsModal" aria-hidden="true">
+    <section class="settings-card">
+      <button class="close" id="closeSettings" aria-label="关闭">×</button>
+      <small>设置</small>
+      <h2>声音</h2>
+      <p class="settings-note">四档音量分开调，全部记在这台机器上；静音键关掉的是全部声音，包括阶段性文件音乐。</p>
+      <div class="volume-rows">
+        <label class="volume-row" data-bus-row="master"><span>总音量</span><input type="range" min="0" max="100" id="volMaster" /><output id="volMasterOut">92</output></label>
+        <label class="volume-row" data-bus-row="music"><span>背景音乐</span><input type="range" min="0" max="100" id="volMusic" /><output id="volMusicOut">60</output></label>
+        <label class="volume-row" data-bus-row="ambient"><span>环境声</span><input type="range" min="0" max="100" id="volAmbient" /><output id="volAmbientOut">100</output></label>
+        <label class="volume-row" data-bus-row="fx"><span>事件音效</span><input type="range" min="0" max="100" id="volFx" /><output id="volFxOut">85</output></label>
+      </div>
+      <div class="settings-status" id="audioStatus" role="status"></div>
+      <div class="settings-actions">
+        <button id="audioRetry">重新载入声音素材</button>
+        <button id="audioMute">静音 / 恢复</button>
+      </div>
+      <h2>画面</h2>
+      <div class="settings-actions">
+        <button id="settingsMotion" aria-pressed="false">减少动态效果</button>
+      </div>
+      <small class="settings-foot" id="seedLine"></small>
+    </section>
+  </div>
+
+  <div class="modal" id="endModal" aria-hidden="true">
+    <section class="end-card">
+      <div class="end-scene" aria-hidden="true"><span class="end-moon"></span><span class="end-crown">♛</span></div>
+      <div class="end-content">
+        <small class="end-kicker">夜冠 · 终章</small>
+        <h2 id="endTitle"></h2>
+        <p id="endText"></p>
+        <div class="end-hero-line" id="endHeroLine"></div>
+        <div class="end-ledger" id="endLedger"></div>
+        <div class="end-actions"><button id="endRestart">再次进入城堡</button></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 开场 CG 覆盖层：点“开始游戏”后全屏播放，结束后黑屏 2 秒淡出露出处组队界面 -->
+  <div id="cgOverlay" aria-hidden="true">
+    <video id="cgVideo" src="assets/opening-cg.mp4" playsinline preload="auto"></video>
+    <div id="cgBlack"></div>
+    <div id="cgSubtitle"></div>
+    <div id="cgSkip" role="button" tabindex="0">ESC / <span class="key">跳过</span></div>
+  </div>
+
+  <script src="audio.js"></script>
+  <script src="keys.js"></script>
+<script src="visuals.js"></script>
+<script src="stage-music.js"></script>
+<script src="game.js"></script>
+<script src="world-rules.js"></script>
+<script src="stage-cinema.js"></script>
+  <script src="freeroam/fr-data.js"></script>
+  <script src="freeroam/fr-map.js"></script>
+  <script src="freeroam/fr-sprite.js"></script>
+  <script src="freeroam/fr-render.js"></script>
+  <script src="freeroam/fr-ai.js"></script>
+  <script src="freeroam/fr-steal.js"></script>
+  <script src="freeroam/fr-game.js"></script>
+  <script src="complete.js"></script>
+  <script src="opening-cg.js"></script>
+</body>
+</html>

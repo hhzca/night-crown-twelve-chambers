@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#07070f"/>
+      <stop offset="1" stop-color="#020206"/>
+    </linearGradient>
+    <radialGradient id="gateGlow" cx="50%" cy="70%" r="60%">
+      <stop offset="0" stop-color="#ffcb86" stop-opacity=".30"/>
+      <stop offset=".55" stop-color="#ff9c4a" stop-opacity=".09"/>
+      <stop offset="1" stop-color="#ff9c4a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="330" width="1600" height="90" fill="url(#stone)"/>
+  <!-- 左翼 -->
+  <g fill="url(#stone)">
+    <rect x="70" y="230" width="150" height="190"/>
+    <rect x="96" y="196" width="98" height="40"/>
+    <rect x="118" y="150" width="54" height="52"/>
+    <rect x="252" y="268" width="180" height="152"/>
+    <rect x="286" y="236" width="112" height="36"/>
+  </g>
+  <!-- 中央主塔与城门 -->
+  <g fill="url(#stone)">
+    <rect x="470" y="120" width="220" height="300"/>
+    <rect x="506" y="76" width="148" height="48"/>
+    <rect x="536" y="30" width="88" height="50"/>
+    <rect x="700" y="252" width="200" height="168"/>
+    <rect x="640" y="300" width="320" height="120"/>
+    <rect x="900" y="120" width="220" height="300"/>
+    <rect x="936" y="76" width="148" height="48"/>
+    <rect x="966" y="30" width="88" height="50"/>
+  </g>
+  <!-- 右翼 -->
+  <g fill="url(#stone)">
+    <rect x="1168" y="268" width="180" height="152"/>
+    <rect x="1202" y="236" width="112" height="36"/>
+    <rect x="1380" y="230" width="150" height="190"/>
+    <rect x="1406" y="196" width="98" height="40"/>
+    <rect x="1428" y="150" width="54" height="52"/>
+  </g>
+  <!-- 城门与暖光 -->
+  <ellipse cx="800" cy="420" rx="120" ry="140" fill="url(#gateGlow)"/>
+  <path d="M726 420V352a74 74 0 0 1 148 0v68Z" fill="#020206"/>
+  <!-- 窗火 -->
+  <g fill="#ffcf8a" fill-opacity=".5">
+    <rect x="500" y="176" width="10" height="20" rx="4"/>
+    <rect x="640" y="210" width="10" height="20" rx="4"/>
+    <rect x="944" y="176" width="10" height="20" rx="4"/>
+    <rect x="1090" y="214" width="10" height="20" rx="4"/>
+    <rect x="300" y="292" width="9" height="18" rx="4"/>
+    <rect x="1230" y="292" width="9" height="18" rx="4"/>
+  </g>
+  <!-- 城垛 -->
+  <g fill="#04040a">
+    <path d="M70 230h150v-0h-150z"/>
+    <path d="M118 150h54v-26h-54z"/>
+    <path d="M536 30h88v-24h-88z"/>
+    <path d="M966 30h88v-24h-88z"/>
+    <path d="M1428 150h54v-26h-54z"/>
+  </g>
+</svg>

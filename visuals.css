@@ -1,0 +1,250 @@
+/* Four new painted environments, with independent haze, light and foreground planes. */
+.room-stage { --depth-fog: #8191d8; --beam: #9c8ad0; background: #090d1e; }
+.room-stage[data-room="garden"] { --depth-fog: #7caeb2; --beam: #b4d7f5; }
+.room-stage[data-room="dungeon"], .room-stage[data-room="basement"] { --depth-fog: #506ca3; --beam: #5f9abd; }
+.room-stage[data-room="kitchen"], .room-stage[data-room="clock"] { --beam: #edb979; }
+.room-stage[data-room="reward"], .room-stage[data-room="secret"] { --depth-fog: #a77ecf; --beam: #d3a6f6; }
+.room-bg { inset: -2%; background-size: cover; background-position: center center; transform: scale(1.04); filter: brightness(.86) saturate(.94) contrast(1.04); }
+.room-stage[data-room="dungeon"] .room-bg { filter: brightness(.73) saturate(.82) contrast(1.07); transform: scale(1.04); }
+.room-stage[data-room="reward"] .room-bg { filter: brightness(.95) saturate(1.13); }
+.room-tint { z-index: 0; mix-blend-mode: normal; background: linear-gradient(180deg,#080a1c77,transparent 23% 58%,#08081455),radial-gradient(ellipse at 52% 46%,color-mix(in srgb,var(--depth-fog) 13%,transparent),transparent 55%); }
+.depth-haze, .light-shafts { position:absolute; inset:0; pointer-events:none; }
+.depth-haze { z-index:2; background:linear-gradient(90deg,#0c0f24a8,transparent 20% 79%,#0c0f24b0),radial-gradient(ellipse at 51% 47%,color-mix(in srgb,var(--depth-fog) 16%,transparent),transparent 62%); animation: depthBreathe 8s ease-in-out infinite alternate; }
+.light-shafts { z-index:3; opacity:.56; background:linear-gradient(108deg,transparent 8%,color-mix(in srgb,var(--beam) 12%,transparent) 24%,transparent 36% 64%,color-mix(in srgb,var(--beam) 9%,transparent) 79%,transparent 90%); mix-blend-mode:screen; animation: shaftSway 10s ease-in-out infinite alternate; }
+.foreground { z-index:9; height:30%; background:linear-gradient(0deg,#050713cd,transparent 62%),linear-gradient(90deg,#08091588,transparent 17% 83%,#08091588); filter:none; animation: foregroundDrift 9s ease-in-out infinite alternate; }
+.particles { z-index:4; }
+.actor { bottom:47px; }
+@keyframes depthBreathe { from { opacity:.52; transform:translateX(-1.2%); } to { opacity:.83; transform:translateX(1.2%); } }
+@keyframes shaftSway { from { opacity:.36; transform:translateX(-2%) skewX(-2deg); } to { opacity:.64; transform:translateX(2%) skewX(2deg); } }
+@keyframes foregroundDrift { from { transform:translateX(-.7%) scale(1.015); } to { transform:translateX(.7%) scale(1.025); } }
+
+/* Shared acting vocabulary applies to every hero skin, including visible AI actors. */
+.actor.emotion-sad { animation: emotionCry 1.8s ease-in-out both !important; }
+.actor.emotion-happy { animation: emotionJoy 1.8s ease-out both !important; }
+.emotion-face { position:absolute; z-index:15; top:-16%; left:48%; width:42px; height:42px; display:grid; place-items:center; border:2px solid #b7c9eeaa; border-radius:50%; background:#10182de9; box-shadow:0 4px 18px #0009,0 0 18px #88b9e655; pointer-events:none; animation:emotionBubble 1.8s ease-out both; }
+.emotion-face svg { width:36px; height:36px; }
+.emotion-happy .emotion-face { border-color:#ffdfa3cc; background:#34271de9; box-shadow:0 4px 18px #0009,0 0 24px #ffd36b77; }
+.portrait { position:relative; }
+.portrait.emotion-sad { animation: portraitCry 1.8s ease-in-out both !important; }
+.portrait.emotion-happy { animation: portraitJoy 1.8s ease-in-out both !important; }
+.portrait.emotion-sad::after,.portrait.emotion-happy::after { position:absolute; right:-4px; top:-5px; font-size:23px; font-weight:900; text-shadow:0 2px 5px #000,0 0 12px currentColor; }
+.portrait.emotion-sad::after { content:'💧'; color:#92cfff; }
+.portrait.emotion-happy::after { content:'✦'; color:#ffe191; }
+@keyframes emotionCry { 0%,100% { transform:none; } 18% { transform:translateY(7px) rotate(-5deg) scale(.95,.9); filter:brightness(.64) saturate(.62) drop-shadow(0 10px 5px #000c); } 35%,58% { transform:translateY(11px) rotate(-3deg) scale(.93,.88); } 45%,68% { transform:translateY(9px) rotate(-5deg) scale(.93,.9); } 82% { transform:translateY(4px) rotate(-2deg); } }
+@keyframes emotionJoy { 0%,100% { transform:none; } 18% { transform:translateY(6px) scale(.94,1.04); } 34% { transform:translateY(-18px) rotate(6deg) scale(1.07); filter:brightness(1.18) drop-shadow(0 0 15px #f7d36b); } 52% { transform:translateY(1px) rotate(-5deg); } 69% { transform:translateY(-11px) rotate(3deg) scale(1.04); } 85% { transform:translateY(0); } }
+@keyframes emotionBubble { 0% { opacity:0; transform:translateY(9px) scale(.55); } 17%,77% { opacity:1; transform:translateY(-4px) scale(1); } 100% { opacity:0; transform:translateY(-18px) scale(.92); } }
+@keyframes portraitCry { 0%,100% { filter:drop-shadow(0 5px 3px #0009); } 25%,75% { filter:grayscale(.35) brightness(.75) drop-shadow(0 0 9px #76b6e6); transform:rotate(-5deg) translateY(3px); } }
+@keyframes portraitJoy { 0%,100% { filter:drop-shadow(0 5px 3px #0009); } 25%,75% { filter:brightness(1.16) drop-shadow(0 0 10px #ffd27d); transform:rotate(4deg) translateY(-4px); } }
+@media (prefers-reduced-motion:reduce) { .depth-haze,.light-shafts,.foreground,.emotion-face,.actor.emotion-sad,.actor.emotion-happy,.portrait.emotion-sad,.portrait.emotion-happy { animation:none !important; } }
+.reduce-motion .depth-haze,.reduce-motion .light-shafts,.reduce-motion .foreground,.reduce-motion .emotion-face,.reduce-motion .actor.emotion-sad,.reduce-motion .actor.emotion-happy,.reduce-motion .portrait.emotion-sad,.reduce-motion .portrait.emotion-happy { animation:none !important; }
+
+/* Each hero changes into a painted full-body reaction pose, while the older
+   movement and small reaction badge remain as secondary feedback. */
+.actor.emotion-sprite-active .sprite {
+  background-image: var(--emotion-art) !important;
+  background-size: 200% 100% !important;
+  background-repeat: no-repeat !important;
+}
+.actor.emotion-sprite-active.emotion-tall-sheet { aspect-ratio: .75; }
+.actor.emotion-sprite-active.emotion-happy .sprite { background-position: left center !important; }
+.actor.emotion-sprite-active.emotion-sad .sprite { background-position: right center !important; }
+
+/* The sidebar is a readable summary. The full bag uses three keyboard pages. */
+.info-strip .strip-toggle { order:-2; }
+.info-strip .inventory-block { order:-1; }
+.bag-compact { display:grid; gap:5px; font-size:12px; line-height:1.3; }
+.bag-compact > span { display:block; color:#d8d1dd; white-space:normal; }
+.bag-compact b { color:#ecd6a8; }
+.bag-compact button { width:100%; min-height:29px; color:#f0e4ce; background:#443b37; border:1px solid #d2ad70; border-radius:6px; cursor:pointer; }
+.bag-page-heading { color:#eed19d; font-size:14px; font-weight:700; margin-bottom:7px; }
+.side-layer .layer-body { overflow:hidden; }
+.side-layer .layer-grid { gap:5px; }
+.side-layer .layer-cell { min-height:67px; padding:6px 7px 6px 30px; gap:1px; }
+.side-layer .layer-cell .item-summary { white-space:normal; overflow:visible; display:block; font-size:11px; line-height:1.22; }
+.side-layer .layer-cell .affix-summary { display:inline-flex; align-items:center; }
+.side-layer .layer-cell .item-badge,.side-layer .layer-cell .item-match,.side-layer .layer-cell .item-blocked { font-size:11px; }
+.side-layer .layer-cell .item-icon { display:grid; position:absolute; left:6px; top:32px; transform:scale(.62); transform-origin:top left; }
+.side-layer .layer-note { margin-top:5px; font-size:11px; }
+.side-layer .layer-detail { font-size:13px; }
+.side-layer .layer-desc { line-height:1.4; }
+.side-layer .layer-rows { gap:3px 7px; }
+.side-layer .layer-rows dt,.side-layer .layer-rows dd { font-size:12px; line-height:1.35; }
+.side-layer .layer-foot { padding:5px 7px; }
+.side-layer .layer-foot button { min-height:34px; }
+.side-layer .layer-tip,.side-layer .layer-page { font-size:11px; }
+.side-layer .layer-talk-npc { padding-bottom:5px; margin-bottom:5px; }
+.side-layer .layer-talk-npc .npc-portrait { width:40px; height:47px; }
+.side-layer .layer-line { font-size:15px; line-height:1.42; margin-bottom:6px; }
+.side-layer:has(.layer-talk) .layer-body { padding:5px 8px; }
+.side-layer .layer-talk-npc { padding-bottom:2px; margin-bottom:3px; }
+.side-layer .layer-talk-npc .npc-portrait { width:34px; height:38px; }
+.side-layer .layer-line { font-size:14px; line-height:1.32; margin-bottom:4px; }
+.side-layer .layer-choices { gap:4px; }
+.side-layer .layer-choice { min-height:38px; padding:4px 6px; }
+.side-layer .layer-choice-body b { font-size:13px; white-space:normal; }
+.side-layer .layer-choice-body > span { font-size:12px; white-space:normal; }
+.side-layer .layer-choice-reason { font-size:11px; white-space:normal; }
+
+/* Exploration hints stay brief and color follows their action. All option
+   descriptions wrap naturally instead of ending in an ellipsis. */
+.choice-meta .risk { font-size:11px; color:var(--tone); font-weight:700; }
+.choice-copy b,.choice-copy span { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; display:block !important; }
+.choices .choice { height:auto; min-height:48px; }
+.choice-copy b { font-size:13px; }
+.choice-copy span { font-size:11px; line-height:1.2; }
+.choice-copy .choice-system { display:inline !important; }
+
+/* ---------------------------------------------------------------------------
+ * 房间覆盖层：基础构图 + 每间房自己的视觉母题
+ * ---------------------------------------------------------------------------
+ * 新阶段的独立场景图还没到位，按任务书的允许范围「复用基础构图并增加独立覆盖层」，
+ * 但绝不给所有房间套同一个滤镜：
+ *   - 每个母题有自己的形状、方向与节奏（风、星盘、齿轮、镜面、裂痕……）；
+ *   - 重返探索额外叠加各自的光源方向 + 符文 / 裂缝 / 霜痕；
+ *   - 缺图时挂上明确的「素材待补」角标，而不是悄悄显示大厅。
+ * 真实美术到位后，只要在 visuals.js 的登记表里补 scene 字段即可。
+ * ------------------------------------------------------------------------- */
+.room-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: .85;
+  mix-blend-mode: screen;
+}
+
+/* 阶段基调 */
+.room-bg.art-stage-summit::after { box-shadow: inset 0 60px 120px -60px #cfe6ffaa, inset 0 -80px 140px -80px #0a1020; }
+.room-bg.art-stage-finale::after { box-shadow: inset 0 0 200px 40px #3a0d18aa; }
+.room-bg.art-stage-shard::after { box-shadow: inset 0 0 220px 50px #6f5fa855; }
+
+/* 城堡之巅 */
+.room-bg.art-motif-wind::after {
+  background-image:
+    repeating-linear-gradient(168deg, #ffffff1f 0 2px, transparent 2px 26px),
+    radial-gradient(60% 30% at 20% 88%, #cfe4f522, transparent 70%);
+}
+.room-bg.art-motif-orrery::after {
+  background-image:
+    radial-gradient(circle at 50% 34%, #f5e6b833 0 8%, transparent 9%),
+    repeating-radial-gradient(circle at 50% 34%, #d8c8ff2e 0 1px, transparent 1px 46px),
+    conic-gradient(from 20deg at 50% 34%, #ffffff22, transparent 40%);
+}
+.room-bg.art-motif-banquet::after {
+  background-image:
+    linear-gradient(#00000000 62%, #d8b16a26 62% 68%, #00000000 68%),
+    repeating-linear-gradient(90deg, #f3dcae33 0 10px, transparent 10px 92px);
+}
+.room-bg.art-motif-ash::after {
+  background-image:
+    radial-gradient(40% 60% at 70% 90%, #ff9a4a33, transparent 70%),
+    repeating-linear-gradient(-14deg, #2a1a12aa 0 6px, transparent 6px 22px);
+  mix-blend-mode: multiply;
+}
+
+/* 终局之战 */
+.room-bg.art-motif-gearwork::after {
+  background-image:
+    repeating-conic-gradient(from 0deg at 72% 30%, #efdcae33 0 6deg, transparent 6deg 18deg),
+    repeating-conic-gradient(from 12deg at 28% 68%, #c9a76f2a 0 5deg, transparent 5deg 15deg);
+}
+.room-bg.art-motif-throne::after {
+  background-image:
+    conic-gradient(from 180deg at 50% 16%, #b8343f33, transparent 45%),
+    radial-gradient(70% 50% at 50% 100%, #6b102066, transparent 75%);
+}
+.room-bg.art-motif-haven::after {
+  background-image:
+    radial-gradient(32% 46% at 50% 62%, #ffd89a3d, transparent 72%),
+    linear-gradient(#00000000 55%, #000000aa 100%);
+}
+.room-bg.art-motif-banner::after {
+  background-image:
+    repeating-linear-gradient(102deg, #d9cbb733 0 3px, transparent 3px 44px),
+    linear-gradient(#00000000 70%, #2a1c14cc 100%);
+}
+.room-bg.art-motif-vault::after {
+  background-image:
+    repeating-linear-gradient(90deg, #e8d29540 0 2px, transparent 2px 58px),
+    radial-gradient(50% 40% at 50% 55%, #ffe6a62e, transparent 70%);
+}
+.room-bg.art-motif-council::after {
+  background-image:
+    linear-gradient(#00000000 58%, #0d1020dd 58% 100%),
+    repeating-linear-gradient(180deg, #8f9ec42a 0 1px, transparent 1px 34px);
+}
+.room-bg.art-motif-altar::after {
+  background-image:
+    radial-gradient(26% 34% at 50% 74%, #ff9c4a3d, transparent 72%),
+    repeating-linear-gradient(0deg, #d8cbc033 0 2px, transparent 2px 30px);
+}
+.room-bg.art-motif-mirror::after {
+  background-image:
+    repeating-linear-gradient(74deg, #cfe6ff26 0 8px, transparent 8px 34px),
+    repeating-linear-gradient(-74deg, #ffffff18 0 6px, transparent 6px 40px);
+}
+
+/* 钟楼碎影 */
+.room-bg.art-motif-trail::after {
+  background-image:
+    linear-gradient(96deg, #00000000 42%, #b6f2e044 42% 46%, #00000000 46%),
+    radial-gradient(40% 60% at 30% 50%, #9fd8d033, transparent 70%);
+}
+.room-bg.art-motif-goldflow::after {
+  background-image:
+    radial-gradient(4px 4px at 24% 78%, #ffe6a3cc, transparent 60%),
+    radial-gradient(3px 3px at 62% 64%, #ffe6a3aa, transparent 60%),
+    radial-gradient(3px 3px at 78% 84%, #ffe6a3bb, transparent 60%),
+    linear-gradient(0deg, #d8b45a22, transparent 60%);
+}
+.room-bg.art-motif-fracture::after {
+  background-image:
+    repeating-linear-gradient(58deg, #00000088 0 2px, transparent 2px 46px),
+    conic-gradient(from 200deg at 50% 50%, #c08f8f33, transparent 40%);
+}
+.room-bg.art-motif-watermirror::after {
+  background-image:
+    linear-gradient(#00000000 52%, #9fc7dd33 52% 100%),
+    repeating-linear-gradient(90deg, #ffffff14 0 4px, transparent 4px 30px);
+}
+.room-bg.art-motif-brokenclock::after {
+  background-image:
+    repeating-conic-gradient(from 8deg at 50% 44%, #e6ddff2a 0 4deg, transparent 4deg 26deg),
+    radial-gradient(22% 22% at 50% 44%, #05040aee, transparent 70%);
+}
+
+/* 重返探索：光源方向 + 状态变化层 */
+.room-bg.art-return.art-light-left::after { background-image: linear-gradient(78deg, #ffd9a033, transparent 62%); }
+.room-bg.art-return.art-light-right::after { background-image: linear-gradient(-78deg, #ffd9a033, transparent 62%); }
+.room-bg.art-return.art-overlay-runes::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image:
+    radial-gradient(2px 2px at 18% 34%, #8fe6d9cc, transparent 60%),
+    radial-gradient(2px 2px at 44% 62%, #8fe6d9aa, transparent 60%),
+    radial-gradient(2px 2px at 72% 28%, #8fe6d9bb, transparent 60%),
+    radial-gradient(2px 2px at 86% 70%, #8fe6d977, transparent 60%);
+}
+.room-bg.art-return.art-overlay-cracks::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; opacity: .45;
+  background-image: repeating-linear-gradient(64deg, #00000099 0 2px, transparent 2px 54px);
+}
+.room-bg.art-return.art-overlay-frost::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none; opacity: .35;
+  background-image: radial-gradient(40% 40% at 30% 80%, #cfeaff55, transparent 70%);
+}
+
+/* 缺图与待补：必须看得见 */
+.room-bg.art-pending::after { opacity: .85; }
+.room-bg.art-missing { box-shadow: inset 0 0 0 2px #d8a05a88; }
+.room-bg.art-missing::after { mix-blend-mode: normal; }
+.art-pending-badge {
+  position: absolute; right: 10px; bottom: 10px; z-index: 4;
+  padding: 3px 8px; border-radius: 6px; font-size: 11px; letter-spacing: .06em;
+  color: #f0d9b0; background: #2a211888; border: 1px solid #d8a05a55;
+  pointer-events: none;
+}

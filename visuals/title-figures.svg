@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 220" preserveAspectRatio="xMidYMax meet">
+  <defs>
+    <linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a0a14"/>
+      <stop offset="1" stop-color="#030308"/>
+    </linearGradient>
+    <linearGradient id="cloth2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12101c"/>
+      <stop offset="1" stop-color="#05050c"/>
+    </linearGradient>
+  </defs>
+  <!-- 左：略高，斗篷肩线更硬 -->
+  <g fill="url(#cloth)">
+    <path d="M52 220c-4-52 4-84 20-98 8-7 12-16 12-26 0-18 10-30 24-30s24 12 24 30c0 10 4 19 12 26 16 14 24 46 20 98Z"/>
+    <path d="M84 66c-10-2-16-10-16-20 0-14 10-24 24-24s24 10 24 24c0 10-6 18-16 20-3-8-5-12-8-12s-5 4-8 12Z" fill="#0d0c18"/>
+  </g>
+  <!-- 右：略矮，兜帽更圆 -->
+  <g fill="url(#cloth2)">
+    <path d="M148 220c-3-44 3-72 17-84 7-6 10-13 10-22 0-16 9-27 22-27s22 11 22 27c0 9 3 16 10 22 14 12 20 40 17 84Z"/>
+    <circle cx="197" cy="72" r="21" fill="#100e1b"/>
+  </g>
+  <!-- 地脚阴影 -->
+  <ellipse cx="105" cy="218" rx="62" ry="7" fill="#000" fill-opacity=".8"/>
+  <ellipse cx="197" cy="218" rx="56" ry="6" fill="#000" fill-opacity=".8"/>
+</svg>
