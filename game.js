@@ -1103,8 +1103,6 @@ const itemCategoryOf = item => ITEMS[item?.id]?.category || 'active';
    注意：HELL/破城等处描述里的「3 点」等数值是按上限 5 的尺度写的。 */
 const MAX_VITAL = 5;
 const VITAL_KEYS = ['health', 'stamina', 'sanity'];
-/* 【msg8 §9】金币→分数的换算系数：每 1 金 = 0.05 分，总分封顶 14 分（约等于一条完整体系线）。 */
-const GOLD_SCORE_K = 0.05;
 const BAG_CAPACITY = 10;
 const OTHER_ITEM_CAPACITY = 8;
 function itemCapacityGroup(itemId) {
@@ -7435,9 +7433,12 @@ function scoreBreakdown(player) {
     + player.inventory.filter(item => ITEMS[item.id].category === 'relic')
       .reduce((sum, item) => sum + (ITEMS[item.id].value || 1) * 2.5, 0));
   const build = Math.min(3, Object.keys(GEAR_SYSTEMS).reduce((sum, key) => sum + (systemTier(player, key) === 3 ? 1.5 : systemTier(player, key) === 2 ? .5 : 0), 0));
-  /* 【msg8 §9】金币是真实计分来源：此前 scorePlayer 已读 parts.gold，但这里从没返回，
-     导致 (…+gold) 恒为 NaN、结算条金币计分永远是 0。封顶 14 分，避免刷钱支配排名。 */
-  const gold = Math.min(14, (player.gold || 0) * GOLD_SCORE_K);
+  /* 【msg8 §9】金币计分真实的换算由 world-rules.js 覆盖 scoreBreakdown 时注入
+     （gold = min(12, 金币×0.2)），那是实际生效的唯一来源。
+     这里只保证基础版也带 gold 字段：否则 scorePlayer 解构出的 gold 是 undefined，
+     (core+vitals+keyItems+build+gold) 会变成 NaN，把没加载 world-rules 的场景（如
+     部分无头测试）整条分数打崩。基础版不计金币分。 */
+  const gold = 0;
   return { core, vitals, keyItems, build, gold };
 }
 
