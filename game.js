@@ -9391,6 +9391,8 @@ window.__nightCrownTest = {
   buildRoutes(playerIndex) { buildRoutes(state.players[playerIndex]); return state.players[playerIndex].routes; },
   generateOptions(playerIndex, slot = 1) { return generateOptions(state.players[playerIndex], slot); },
   startTravelPhase: enterTravelSelect,
+  enterGame,
+  scheduleAIChoice,
   enterTravelSelect,
   enterActionSelect,
   enterActionResolve: runActionResolve,
