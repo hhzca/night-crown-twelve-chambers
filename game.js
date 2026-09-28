@@ -113,7 +113,10 @@ const stageRoomIds = stageId => stageId === 'shard' ? ALL_LANDING_ROOM_IDS : STA
 const HELL_COSTS = {
 	'踏过炽链': [['health', -1], ['stamina', -1]],
 	'直面审判': [['stamina', -2]],
-	'辨认赦令': [['sanity', -2]]
+	'辨认赦令': [['sanity', -2]],
+	'数清钟摆': [['sanity', -1]],
+	'赎回影子': [['stamina', -1]],
+	'向审判者求饶': [['sanity', -1]]
 };
 /* 连续失败两次后出现的保底选项：损失 1 点当前最高基础属性后离开；
    基础属性已无可扣值时免费离开。 */
@@ -382,6 +385,21 @@ ITEMS.dungeonShackle = { name: '狱影锁环', glyph: '⛓', colors: ['#998aaf',
   useTags: ['stealth', 'curse'], bonus: 2.4, unbreakable: true, rarity: 'epic', rare: true,
   description: '只在地牢深处找到的装备，提升潜行并在离开地牢后保留优势。',
   effect: { kind: 'passive', statKey: 'stealth', chanceBonus: .12, wearOnTrigger: false } };
+/* 【msg8 §24】新增 4 件逃跑 / 传送道具，主掉落自探索 / 冒险选项与碎影召集房，不从商店直买。
+   裂隙步 = 随机无人普通房（复用 escapeWarp）；镜渡符 = 指定友方 / NPC 房（复用 teleport·requiresTarget）；
+   风信标 / 时砂漏 = 本回合脱身护持（新 effect 见 applyItemEffect）。 */
+ITEMS.riftStep = { name: '裂隙步', glyph: '⌁', colors: ['#9fd0c8', '#21403f'], type: 'portal', category: 'active',
+  useTags: ['escape', 'stealth', 'teleport'], bonus: 2.2, durability: 2, rarity: 'fine', rare: true,
+  description: '踏进一道刚裂开的缝隙，落到随机一间无人的普通房间，并降低下次被夺概率。', effect: { kind: 'escapeWarp' } };
+ITEMS.mirrorFerry = { name: '镜渡符', glyph: '⦿', colors: ['#b9a8dc', '#2b2850'], type: 'portal', category: 'active',
+  useTags: ['escape', 'stealth', 'teleport', 'ally'], bonus: 2.4, durability: 2, rarity: 'fine', rare: true,
+  description: '照出一名同伴或 NPC 所在的房间，把自己折叠过去。', effect: { kind: 'teleport', requiresTarget: true, forbidRooms: ['dungeon', 'reward'], warn: '使用时会向双方暴露彼此的位置。' } };
+ITEMS.windBeacon = { name: '风信标', glyph: '✴', colors: ['#a8d6e0', '#243b46'], type: 'active', category: 'active', quick: true,
+  useTags: ['escape', 'stealth'], bonus: 2.2, durability: 2, rarity: 'fine',
+  description: '举起信标：本回合下次被夺更难下手，并临时 +1 敏捷。不占行动。', effect: { kind: 'windWard', agility: 1, lowerIncoming: .5 } };
+ITEMS.hourglassEscape = { name: '时砂漏', glyph: '⧗', colors: ['#e0c97a', '#4a3a1c'], type: 'portal', category: 'active', quick: true,
+  useTags: ['escape', 'clock'], bonus: 2.3, durability: 2, rarity: 'fine',
+  description: '翻倒砂漏：立刻脱离当前房间，本回合免疫一次夺取。不占行动。', effect: { kind: 'clockEscape', lowerIncoming: .6 } };
 for (const [id, name, value] of [['silverScrip', '银印筹', 1], ['goldScrip', '金印筹', 2], ['crownScrip', '夜冠筹', 3]]) {
   ITEMS[id] = { name, glyph: '♛', colors: ['#d6bb84', '#4a352d'], type: 'relic', category: 'relic',
     useTags: ['reward', 'search'], bonus: 0, durability: 1, rarity: value === 3 ? 'epic' : 'fine', rare: value > 1,
@@ -968,7 +986,7 @@ function fullBagReason(itemId) {
   return itemCapacityGroup(itemId) === 'system' ? '体系装备已满（10 件）' : '其他道具已满（8 件）';
 }
 
-const option = (text, flavor, stat, risk, kind, tags = []) => ({ text, flavor, stat, risk, kind, tags });
+const option = (text, flavor, stat, risk, kind, tags = [], flags = {}) => ({ text, flavor, stat, risk, kind, tags, ...flags });
 
 const ROOM_ACTIONS = {
 	/* 焚罪地狱（城堡之巅）：三条必须面对的考验路线。
@@ -977,7 +995,10 @@ const ROOM_ACTIONS = {
 	hellOfSin: [
 		option('踏过炽链', '滚烫的链环之间只有一脚宽的空隙', 'agility', 2, 'run', ['escape', 'stealth']),
 		option('直面审判', '门后的声音要求你先报上名字', 'strength', 2, 'force', ['guard', 'intimidate']),
-		option('辨认赦令', '两张判决书里只有一张是真的', 'perception', 2, 'mystery', ['mystery', 'search'])
+		option('辨认赦令', '两张判决书里只有一张是真的', 'perception', 2, 'mystery', ['mystery', 'search']),
+		option('数清钟摆', '钟摆的相位错一格就会让你失神', 'luck', 2, 'mystery', ['mystery', 'clock']),
+		option('赎回影子', '把影子从锁链里买回来，需要不被发现', 'stealth', 3, 'hide', ['stealth', 'dark']),
+		option('向审判者求饶', '你跪下的瞬间，锁链笑出了声', 'sanity', 1, 'mystery', ['memory', 'leave'], { hellTrap: true })
 	],
 	/* 最后避难所（终局）：到达后的下一次行动被禁锢。
 	   这一次只显示锁链与「失去一次行动」，不生成普通探索或夺取选项；
@@ -1084,7 +1105,7 @@ const ROOM_ACTIONS = {
   reward: [
     option('触碰房间中央的脉动星匣', '它在等待能与之共鸣的东西', 'luck', 2, 'reward', ['reward', 'mystery']),
     option('沿金色裂缝寻找第二层机关', '光芒后还藏着另一道锁', 'perception', 2, 'reward', ['reward', 'lock']),
-    option('让钟形水晶回应你的心跳', '每一次回声都比奖励更靠近', 'sanity', 3, 'reward', ['reward', 'clock'])
+    option('在泉眼边喘息', '泉水漫过伤口，三口气回来了', 'sanity', 1, 'rewardHeal', ['heal', 'guard'])
   ]
 };
 
@@ -2505,6 +2526,39 @@ function isHealingItem(def) {
   return ['heal', 'soothe', 'restore', 'rations'].includes(def?.effect?.kind);
 }
 
+/* 【msg8 §23】快捷治疗：自动挑最合理的治疗道具——
+   优先补当前最低的生命值类型；同类型多件时选最低稀有度（不浪费金装）。 */
+function bestHealItem(player) {
+  const cands = player.inventory.filter(it => itemCategoryOf(it) === 'active' && isHealingItem(ITEMS[it.id]));
+  if (!cands.length) return null;
+  const vitalOf = it => {
+    const k = ITEMS[it.id].effect?.kind;
+    if (k === 'heal') return 'health';
+    if (k === 'soothe') return 'sanity';
+    if (k === 'restore') return ITEMS[it.id].effect.vital === 'all' ? 'all' : ITEMS[it.id].effect.vital;
+    if (k === 'rations') return 'stamina';
+    return 'health';
+  };
+  const lowest = ['health', 'stamina', 'sanity'].sort((a, b) => player.stats[a] - player.stats[b])[0];
+  const score = it => {
+    const v = vitalOf(it);
+    const matches = (v === lowest || v === 'all') ? 0 : 1;
+    const rarityRank = { common: 0, fine: 1, epic: 2 }[ITEMS[it.id].rarity || 'common'];
+    return matches * 10 + rarityRank;
+  };
+  cands.sort((a, b) => score(a) - score(b));
+  for (const it of cands) if (itemUsable(player, it).ok) return it;
+  return null;
+}
+function doQuickHeal(playerIndex) {
+  const player = state.players[playerIndex];
+  if (!player || player.control !== 'human' || !isSelectPhase() || playerCannotAct(player)) return false;
+  const item = bestHealItem(player);
+  if (!item) return false;
+  if (!openItemPanel(playerIndex, item.uid)) return false;
+  return confirmItemUse(playerIndex);
+}
+
 /* 行囊格子：前四件主动道具独立热键，其余仍可在行囊中查看。 */
 function renderInventory(player) {
   const host = $(`#inventory-${player.index}`);
@@ -2515,6 +2569,7 @@ function renderInventory(player) {
     <span><b>主动/被动</b> ${compactCounts.other}件</span>
     <span class="bag-key-line"><b>金钱/关键</b> <i>钥匙 ${player.stats.keys || 0}</i><i>线索 ${player.stats.clues || 0}</i> · ${compactCounts.relic}件</span>
     <button data-bag-open="${player.index}">完整行囊 <kbd>${keyLabel(keyRowOf(player.index).bag)}</kbd></button>
+    <button data-quick-heal="${player.index}" ${bestHealItem(player) ? '' : 'disabled title="没有可用的治疗道具"'} class="quick-heal-btn" style="border-color:#7bc997;color:#7bc997">快捷治疗 <kbd>H</kbd></button>
   </div>`;
   const bonusHost = $(`#systemBonuses-${player.index}`);
   if (bonusHost) {
@@ -2660,6 +2715,8 @@ function itemTargetsFor(player, def) {
 function itemUsable(player, item) {
   const def = ITEMS[item.id];
   const effect = def.effect || {};
+  /* 【msg8 §5】焚罪地狱中禁止使用任何道具（主动 / 反应 / 被动治疗均禁用）。 */
+  if (player.room === 'hellOfSin') return { ok: false, reason: '地狱中无法使用道具' };
   if (effect.kind === 'shortenJail') return { ok: false, reason: player.chainKeyUsed ? '本局已经自动生效过' : '被送入地牢时自动生效' };
   if (def.quick && player.quickUsedThisRound) return { ok: false, reason: '本回合快速使用次数已用完' };
   if (effect.requiresTarget && !itemTargetsFor(player, def).length) return { ok: false, reason: '当前没有合法目标' };
@@ -3761,6 +3818,17 @@ function optionBudget(player, situation) {
  *   · 最近用过的行动同样降权，跨回合去重继续生效。
  */
 function generateOptions(player, slot = 1) {
+  /* 【msg8 §5】焚罪地狱：固定展示全部 6 个考验选项（含 1 个必然失败陷阱），
+     禁用道具与通用 / 事件 / NPC 选项；玩家在两行动点里各选其一依次尝试（即「选 2」）。 */
+  if (player.room === 'hellOfSin') {
+    const hellPool = (ROOM_ACTIONS.hellOfSin || []).map((entry, index) => cloneAction(entry, `hell-${index}`));
+    if ((player.hellFails || 0) >= 2) {
+      hellPool.push(cloneAction(option(HELL_GUARANTEE_TEXT, HELL_GUARANTEE_FLAVOR, 'sanity', 1, 'mystery', ['memory', 'leave']), 'hell-guarantee'));
+    }
+    player.options = hellPool;
+    player.turn.slots[slot].options = hellPool;
+    return hellPool;
+  }
   if (player.stats.stamina <= 0 && player.room !== 'dungeon') {
     const emergency = [
       { id: `exhausted-rest-${state.round}-${slot}`, kind: 'gearChoice', choice: 'rest', stat: 'sanity', risk: 1,
@@ -3939,6 +4007,18 @@ let score = (statOr(player.stats[entry.stat], statOr(player.stats.luck, 5))) * .
   }
   if (lowHealth && entry.risk >= 3) score -= 6;
   if (lowHealth && entry.tags?.includes('heal')) score += 12;
+  /* 【msg8 §25】人机目标驱动：按 bot.goal 给匹配项加权，让 AI 不再纯随机。 */
+  if (player.control === 'ai' && player.goal) {
+    const g = player.goal;
+    if (g === '搜集遗物' && entry.kind === 'gearChoice') score += 6;
+    else if (g === '夺取资源' && entry.kind === 'attack') score += 6;
+    else if (g === '破解密室' && (entry.kind === 'mystery' || entry.tags?.includes('mystery'))) score += 5;
+    else if (g === '追逐高收益' && entry.kind === 'reward') score += 9;
+    else if (g === '保存实力' && ['heal', 'rest', 'cleanse', 'rewardHeal'].includes(entry.kind)) score += 8;
+    // 生命任一项 ≤2 时主动用治疗 / 净化 / 反应，不再硬刚。
+    if (Math.min(player.stats.health, player.stats.stamina, player.stats.sanity) <= 2
+      && ['heal', 'rest', 'cleanse', 'rewardHeal', 'item'].includes(entry.kind)) score += 11;
+  }
   return score;
 }
 
@@ -4832,7 +4912,7 @@ function chooseRoomLoot(player) {
   const lootRoll = rng.next();
   if (lootRoll < .38) return chooseVisibleSystemGear(player, 0);
   if (lootRoll < .72) return pick(Object.keys(ITEMS).filter(id => ITEMS[id].category === 'relic'));
-  if (lootRoll < .84) return pick([...RECOVERY_IDS, ...WARP_IDS, 'hunterBeacon', 'escapeBeacon']);
+  if (lootRoll < .84) return pick([...RECOVERY_IDS, ...WARP_IDS, 'hunterBeacon', 'escapeBeacon', 'riftStep', 'mirrorFerry', 'windBeacon', 'hourglassEscape']);
   if (lootRoll < .93) return chooseSystemLoot(player);
   const local = ROOM_LOOT[player.room] || ROOM_LOOT.corridor;
   const received = player.lootReceived || {};
@@ -5657,6 +5737,13 @@ function consequenceFor(player, outcome, result, entry = null) {
 	/* —— 钟楼碎影：五个时空房间各自的效果（提示词第八节）—— */
 	if (player.room === 'hellOfSin' && ['summit','shard'].includes(state.stageId) && entry
       && (ROOM_ACTIONS.hellOfSin.some(e=>e.text===entry.text) || entry.text===HELL_GUARANTEE_TEXT)) {
+		/* 【msg8 §5】必然失败陷阱：「向审判者求饶」永远是伪赦令，求饶不会被答应。 */
+		if (entry.hellTrap) {
+			player.hellFails = (player.hellFails || 0) + 1;
+			applyChanges(player, HELL_COSTS['向审判者求饶'] || [['sanity', -1]], result);
+			result.consequences.push('你跪下的瞬间，锁链笑出了声——求饶永不会被答应。');
+			return;
+		}
 		// 保底：交出一段记忆 —— 扣当前最高基础属性 1 点后离开；已无可扣就免费离开。
 		if (String(entry.text) === HELL_GUARANTEE_TEXT) {
 			const cores = ['strength', 'agility', 'perception', 'luck', 'intimidation', 'stealth'];
@@ -5975,6 +6062,30 @@ async function resolveRewardAction(player, intent, result) {
   }
 }
 
+/* 【msg8 §6】奖励房固定三选项之一：在泉眼边直接回满 3 点体力，并顺手摘掉一项负面状态。 */
+async function resolveRewardHealAction(player, intent, result) {
+  const viewer = state.players.find(candidate => candidate.control === 'human' && candidate.room === player.room);
+  if (viewer && audio.reward) audio.reward(viewer.index);
+  await animateActor(player.index, 'rewarding', reducedMotion || state.headless ? 0 : 700);
+  const changes = [['stamina', 3]];
+  applyChanges(player, changes, result);
+  const bad = ['受伤', '疲惫', '动摇', '暴露', '虚弱', '恐惧'].find(status => player.statuses.includes(status));
+  if (bad) {
+    player.statuses = player.statuses.filter(status => status !== bad);
+    result.consequences.push(`顺带把「${bad}」从你身上摘了下来。`);
+  }
+  result.outcome = 'success';
+  result.title = '泉水漫过伤口，三口气回来了';
+  result.story = '你在泉眼边坐下，水流漫过伤口，三口气一点点回到了胸口。';
+  result.pendingChanges = changes;
+  sealFeedback(result, {
+    animationId: 'rewarding', sfxProfile: 'reward', roomVoice: ROOM_VOICE.reward.tone,
+    affectedStats: ['stamina'], maxDelta: 3, changesPending: true, deferMs: 600
+  });
+  const used = itemByUid(player, intent.itemUid);
+  if (used) useAndMaybeBreakItem(player, used, result);
+}
+
 function resolveQuietGuard(player, intent, result) {
   player.statuses = uniqueAdd(player.statuses, '戒备');
   player.protection = Math.max(player.protection, 1);
@@ -6190,6 +6301,24 @@ function applyItemEffect(player, item, result, opts = {}) {
       window.NightCrownWorld.relocate(player, dest, 'forced');
       player.incomingStealPenalty = Math.max(player.incomingStealPenalty || 0, .18);
       result.consequences.push(`${def.name}让你脱身，来到${ROOM_BY_ID[dest].name}。`);
+      return true;
+    }
+    /* 【msg8 §24】风信标 / 时砂漏：本回合脱身护持。 */
+    case 'windWard': {
+      const gain = effect.agility || 1;
+      player.stats.agility = (player.stats.agility || 0) + gain;
+      addChange(result, 'agility', gain);
+      player.incomingStealPenalty = Math.max(player.incomingStealPenalty || 0, effect.lowerIncoming || .5);
+      result.consequences.push(`${def.name}扬起一阵风：下次被夺更难得手，敏捷 +${gain}。`);
+      return true;
+    }
+    case 'clockEscape': {
+      const occupied = new Set(state.players.filter(other => other.id !== player.id && !other.collapsed).map(other => other.room));
+      const pool = NORMAL_ROOM_IDS.filter(id => id !== player.room && !occupied.has(id));
+      const dest = pick(pool.length ? pool : NORMAL_ROOM_IDS.filter(id => id !== player.room));
+      window.NightCrownWorld.relocate(player, dest, 'forced');
+      player.incomingStealPenalty = Math.max(player.incomingStealPenalty || 0, effect.lowerIncoming || .6);
+      result.consequences.push(`${def.name}让你离开${ROOM_BY_ID[player.room].name}，来到${ROOM_BY_ID[dest].name}；本回合被夺更难下手。`);
       return true;
     }
     case 'returnHome': {
@@ -6641,6 +6770,8 @@ async function runActionResolve(slot) {
         resolveQuietGuard(player, slotState, result);
       } else if (entry.kind === 'reward') {
         await resolveRewardAction(player, slotState, result);
+      } else if (entry.kind === 'rewardHeal') {
+        await resolveRewardHealAction(player, slotState, result);
       } else if (entry.kind === 'cleanse') {
         await resolveCleanseAction(player, slotState, result);
       } else if (entry.kind === 'item') {
@@ -7863,6 +7994,16 @@ function handleKeydown(event) {
     return;
   }
 
+  /* 【msg8 §23】快捷治疗：选择阶段按 H 用最合理的治疗道具。作用于当前可行动的人类玩家。 */
+  if (event.code === 'KeyH' && isSelectPhase()) {
+    const pidx = state.players.findIndex(p => p.control === 'human' && !playerCannotAct(p) && isSelectPhase());
+    if (pidx >= 0) {
+      event.preventDefault();
+      doQuickHeal(pidx);
+    }
+    return;
+  }
+
   /* 阶段演出期间只认「跳过」：空格 / 回车都走和看完一样的出口，
      其它输入一律不穿透到下面的玩法层。 */
   if (state.phase === 'stage_transition') {
@@ -8187,6 +8328,12 @@ const layerAdvance = target.closest('[data-layer-advance]');
   if (bagOpen) {
     const index = playerIndexOf(bagOpen);
     if (humanAt(index)) openLayer(index, 'bag');
+    return;
+  }
+  const quickHeal = target.closest('[data-quick-heal]');
+  if (quickHeal) {
+    const index = playerIndexOf(quickHeal);
+    if (humanAt(index)) doQuickHeal(index);
     return;
   }
   const talkOpen = target.closest('[data-talk-open]');
