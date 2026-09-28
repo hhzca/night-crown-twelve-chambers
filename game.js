@@ -614,6 +614,15 @@ for (const [id, [name, description, ...useTags]] of Object.entries(UNIVERSAL_GEA
     rare: true, alignment: id === 'gear_flame' ? 'light' : 'neutral', description,
     effect: { kind: 'passive', statKey: 'perception', chanceBonus: .02, wearOnTrigger: false } };
 }
+/* 【msg8 §14】夜市商会传奇装备：六特质各 +8，gold 品质，绑 market 体系（计 6 件）。 */
+ITEMS.gear_market_legend = {
+  name: '秤骨契约', glyph: '⚖', colors: [GEAR_SYSTEMS.market.color, '#1a1410'], type: 'passive',
+  category: 'equipment', useTags: GEAR_SYSTEMS.market.tags, bonus: 4.2, unbreakable: true,
+  rarity: 'epic', rare: true, system: 'market', piece: 1, alignment: 'neutral',
+  hexBonus: 8, legend: true,
+  description: `夜市商会传奇契约：六项特质各 +8，计入商会体系六件。只有当商会承认你走完整条路时才会给出。`,
+  effect: { kind: 'passive', statKey: 'luck', chanceBonus: .16, wearOnTrigger: false }
+};
 
 // 每件体系装备有自己的词条方案。体系决定组合倾向，不再锁定单一属性。
 // 蓝/紫/金分别为词条一/二/三档；只有专属传奇能拥有三条满档词条。
@@ -670,6 +679,10 @@ const LEGENDARY_AFFIX_PLAN = {
   fate: [['flat_stat','luck'],['gain_pct'],['attack_stat','agility']],
   market: [['gain_pct'],['loot_pct'],['gain_stat','luck']]
 };
+/* 【msg8 §14】夜市商会传奇装备「秤骨契约」：六项特质各 +8，gold，绑 market 体系计 6 件。
+   用 hexBonus 直接给六项 flat 加成（超出常规词条数值），不走 makeAffix 的档位表。 */
+const HEX_STAT_KEYS = ['strength', 'agility', 'perception', 'luck', 'intimidation', 'stealth'];
+const LEGEND_HEX_BONUS = 8;
 /* ---------------------------------------------------------------------------
  * 装备实例
  * ---------------------------------------------------------------------------
@@ -800,8 +813,14 @@ function affixText(affix) {
 }
 function activeAffixes(player) { return player.inventory.flatMap(item => itemAffixes(item)); }
 function affixTotal(player, kind, stat = null) {
-  return activeAffixes(player).filter(affix => affix.kind === kind && (!stat || affix.stat === stat))
+  const base = activeAffixes(player).filter(affix => affix.kind === kind && (!stat || affix.stat === stat))
     .reduce((sum, affix) => sum + affix.value, 0);
+  /* 【msg8 §14】传奇「秤骨契约」：对六项特质各额外 +8（走 flat_stat 通道）。 */
+  if (kind === 'flat_stat') {
+    const hex = (player.inventory || []).filter(item => ITEMS[item.id]?.hexBonus).reduce((sum, item) => sum + ITEMS[item.id].hexBonus, 0);
+    if (hex && (!stat || HEX_STAT_KEYS.includes(stat))) return base + hex;
+  }
+  return base;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1296,12 +1315,15 @@ const EVENT_ACTIONS = [
  * 关系记忆只有四档（初识 / 信任 / 警惕 / 敌对），只影响少量选项、价格与信息真伪。
  */
 const NPC_RELATION_LEVELS = [
+  { min: 4, label: '至交', tone: 'good' },
   { min: 3, label: '信任', tone: 'good' },
   { min: 1, label: '亲近', tone: 'good' },
   { min: 0, label: '初识', tone: '' },
   { min: -2, label: '警惕', tone: 'warn' },
   { min: -99, label: '敌对', tone: 'alert' }
 ];
+/* 【msg8 §11】好感上限 = 4，满 4 才解锁最终对话；被他人占满时自己封顶在 3。 */
+const NPC_RELATION_MAX = 4;
 
 const dialogueChoice = (spec) => ({
   kind: 'npc', consumesAction: true, rel: 0, usesItem: [], gain: [], loss: [], risk: 1, ...spec
@@ -1915,7 +1937,7 @@ const makeItem = (id, options = {}) => {
   const equipment = def?.category === 'equipment';
   const growth = equipment ? clamp(Number(options.growth) || gearGrowthTier(), 1, 5) : 1;
   const quality = equipment
-    ? (options.quality || (def.system || def.piece ? rollGearQuality(growth, Number(options.luck) || 0) : 'blue'))
+    ? (options.quality || def.legend ? 'gold' : (def.system || def.piece ? rollGearQuality(growth, Number(options.luck) || 0) : 'blue'))
     : null;
   return {
     id,
@@ -2955,18 +2977,20 @@ function relationOf(player, npcId) {
 function addRelation(player, npcId, delta) {
   if (!delta) return;
   player.npcRelation = player.npcRelation || {};
-  const MAX_REL = NPC_RELATION_LEVELS[0].min; // 满好感阈值 = 信任(3)
+  const MAX_REL = NPC_RELATION_MAX; // 【msg8 §11】满好感阈值 = 4
   let after = (player.npcRelation[npcId] || 0) + delta;
-  /* 【msg8 §11】NPC 好感满(>=3)只归属一个玩家：若已被他人占满，自己封顶在 2(亲近)，
+  after = clamp(after, -3, MAX_REL);
+  /* 【msg8 §11】NPC 好感满(>=4)只归属一个玩家：若已被他人占满，自己封顶在 3(信任)，
      拿不到满好感最终对话，也不会抢走归属。 */
   state.npcMaxedOwner = state.npcMaxedOwner || {};
   const owner = state.npcMaxedOwner[npcId];
   if (after >= MAX_REL && owner && owner !== player.id) after = MAX_REL - 1;
   player.npcRelation[npcId] = after;
   if (after >= MAX_REL && !owner) state.npcMaxedOwner[npcId] = player.id; // 首个拉满者登记为唯一归属
-  // 好感首次达到现有体系的最高档 → 该 NPC 赠送时间护符。
-  // 每名玩家每局最多通过这条机制拿到一枚，不能靠多个 NPC 或反复对话刷取。
-  if (!player.charmGranted && (player.npcRelation[npcId] || 0) >= NPC_RELATION_LEVELS[0].min) {
+  /* 已占满者掉回 <4，名额释放 */
+  if (owner === player.id && after < MAX_REL) delete state.npcMaxedOwner[npcId];
+  // 好感首次达到「信任」(>=3) → 该 NPC 赠送时间护符（与 §11 满 4 无关，保留原触发点）。
+  if (!player.charmGranted && after >= 3) {
     player.charmGranted = true;
     player.charms = (player.charms || 0) + 1;
     player.travelNotes.push(`${NPCS[npcId]?.name || '友人'}赠给你一枚时间护符。它不占行囊，在时空房间可使用，也能修补崩溃时钟。`);
@@ -4153,6 +4177,12 @@ function generateOptions(player, slot = 1) {
     .map(entry => ({ entry, weight: rng.next() * 3 - (recent.has(entry.id) ? 1.8 : 0) - affinityPenalty(entry) }))
     .sort((a, b) => b.weight - a.weight)
     .map(row => row.entry);
+  /* 【msg8 §11】有 NPC 且无特殊效果 → 卡掉「冒险」选项，保留 ①体系装备 ②搜索治疗物 ③属性加成，
+     让玩家去和 NPC 对话（对话本身是这一步的④）。特殊房间（地狱/终局/碎影核心）不裁。 */
+  const specialRoom = ['hellOfSin', 'lastHaven', 'bellTower', 'bloodThrone', 'reward', 'dungeon'].includes(player.room);
+  if (npcPool.length && !specialRoom) {
+    pool = pool.filter(entry => entry.kind !== 'mystery' && entry.kind !== 'run' && entry.kind !== 'force' && entry.kind !== 'hide' && entry.kind !== 'wait' && entry.kind !== 'trade');
+  }
   // 池子不足时允许复用最近用过的，但仍然排除另一格已经选定的那条。
   if (pool.length < 3) {
     pool = shuffle([...roomPool, ...generic, ...context]).filter(entry => !banned(entry));
@@ -4582,6 +4612,8 @@ function resetTurnState(player) {
   player.talentUsedThisRound = false;
   /* 【msg8 §4】主动技能冷却每回合递减一次。 */
   player.activeCooldown = Math.max(0, (player.activeCooldown || 0) - 1);
+  /* 【msg8 §11】同 NPC 单回合最多对话 3 次 —— 每回合清空计数。 */
+  player.npcTalkThisRound = {};
   player.actionPoints = slotCountForStage(state.stageId);
 }
 
@@ -6796,6 +6828,19 @@ function resolveGearNpcTrade(player, npc, topic, result) {
     result.outcome = 'great'; result.story = `你交出${ITEMS[payment.id].name}，商人交给你一件偏向${GEAR_SYSTEMS[system].name}的装备。`;
     return;
   }
+  /* 【msg8 §14】夜市商会传奇：成功赠予六特质各 +8 的传奇装备。 */
+  if (topic.id === 'market-legend') {
+    const check = npcCheckTarget(player, { ...topic, npcId: npc.id });
+    if (!check.success) { result.outcome = 'fail'; result.story = '商会摇了摇头：路还没有走满。'; return; }
+    const legendId = 'gear_market_legend';
+    if (!canCarryItem(player, legendId)) { result.outcome = 'fail'; result.story = `${fullBagReason(legendId)}，传奇装备暂时收不进你的行囊。`; return; }
+    giveItem(player, legendId, result);
+    player.flags = uniqueAdd(player.flags, 'marketLegend');
+    result.outcome = 'great';
+    result.story = '商人从黑金契约抽出一枚秤骨，六面重量压进你的骨血。';
+    result.consequences.push('传奇装备「秤骨契约」已归你所有——六项特质各 +8，计入商会体系。');
+    return;
+  }
   if (topic.id === 'market-epic' || topic.id === 'market-universal' || topic.id === 'market-relic') {
     let price = topic.id === 'market-epic' ? [['health', -2], ['clues', -3]]
       : topic.id === 'market-universal' ? [['sanity', -2], ['clues', -2]] : [['health', -3], ['keys', -1]];
@@ -6929,6 +6974,24 @@ async function resolveNpcAction(player, intent, result) {
       result.consequences.push(`${npc.name}看了你一眼：「等你再深一些，我自会给你。」`);
     }
   }
+  /* 【msg8 §11/§16】满好感最终对话：园丁给旧铃铛(+20 好感向奖励)，其余给传奇装备或时间护符。 */
+  if (choice.id?.startsWith('final-') && check.success) {
+    if (npcId === 'gardener') {
+      player.flags = uniqueAdd(player.flags, 'oldBell');
+      if (!player.charmGranted) { player.charmGranted = true; player.charms = (player.charms || 0) + 1; }
+      result.consequences.push('旧铃铛归你了。它不占行囊——在时空房间摇响它，你能改写一次错位的落点。');
+    } else {
+      const sysKey = NPC_SYSTEM[npcId] || 'astral';
+      const legendary = chooseGearFromSystem(player, sysKey, true);
+      if (legendary && canCarryItem(player, legendary)) {
+        giveItem(player, legendary, result);
+        result.consequences.push(`${npc.name}把一生只给一个人的东西交到你手上：${ITEMS[legendary].name}。`);
+      } else {
+        player.charms = (player.charms || 0) + 1;
+        result.consequences.push(`${npc.name}给了你一枚时间护符。`);
+      }
+    }
+  }
   if (choice.shortenJail) shortenJail(player, result, npc.name);
   if (choice.trade) {
     const { give, take, cost } = choice.trade;
@@ -6953,6 +7016,9 @@ async function resolveNpcAction(player, intent, result) {
   addRelation(player, npc.id, choice.rel || 0);
   const relationNow = relationOf(player, npc.id);
   result.consequences.push(`与${npc.name}的关系现在是「${relationNow.label}」。`);
+  /* 【msg8 §11】记录本回合与该 NPC 的对话次数。 */
+  player.npcTalkThisRound = player.npcTalkThisRound || {};
+  player.npcTalkThisRound[npc.id] = (player.npcTalkThisRound[npc.id] || 0) + 1;
 
   /* 【msg8 §13】NPC 冒险式对话成功 → 金币 ×1.4 且必掉 1 件体系装备或线索，高于普通房。 */
   if (check.success && choice.risk >= 2 && npc.id !== 'relicDealer') {
@@ -7959,6 +8025,14 @@ function npcTopicChoices(player, npcId) {
         { id: 'market-currency', text: '用关键遗物支付专属装备', flavor: '交出一件遗物，换取偏向当前体系的装备',
           stat: 'luck', risk: 1, secretOnly: true, requiresRelic: true, success: { text: '商人把遗物放上秤盘。' } }
       ];
+      /* 【msg8 §14】夜市商会传奇：夜市最高难度对话。需要 6 件商会装备 + 关系 4，
+         成功赠予六特质各 +8 的传奇装备（gold，绑 market，计 6 件）。 */
+      if (systemCount(player, 'market') >= 6 && relationOf(player, npcId).value >= 4) {
+        list.push({ id: 'market-legend', text: '与商会签订传奇契约', flavor: '把六件商会装备摊在秤上，让商会承认你走完了一整条路',
+          stat: 'luck', risk: 3, secretOnly: true, requiresSystem: 'market', requiresCount: 6,
+          success: { text: '商人从黑金契约抽出一枚秤骨，六面重量压进你的骨血。' },
+          failure: { text: '商会摇了摇头：路还没有走满。' } });
+      }
     }
   } else {
     /* 【msg8 §10】非商人 NPC 对话重构为：2 个属性考验 + 1 个门槛奖励项。
@@ -7993,6 +8067,17 @@ function npcTopicChoices(player, npcId) {
       if (talentTopic) list.push(talentTopic);
       if (thresholdTopic && list.length < 4) list.push(thresholdTopic);
     }
+    /* 【msg8 §11/§16】满好感(4)解锁最终对话：专属结局 + 高价值奖励。
+       园丁的最终对话是「旧铃铛」，额外给一枚时间护符或一件传奇装备。 */
+    if (relationOf(player, npcId).value >= NPC_RELATION_MAX) {
+      list.push({ id: `final-${npcId}`, text: `${npc.name}的最终对话`, kind: 'npc', consumesAction: true, rel: 0,
+        flavor: '你把已经走到的信任摊开在它面前，它会给你一个只属于这条线的收束',
+        stat: 'sanity', risk: 1, requiresRelation: NPC_RELATION_MAX, gain: [], loss: [],
+        success: { changes: [], text: gardener
+          ? '园丁从花圃最底下挖出一只旧铃铛，铃舌上刻着你的名字。「它一直在等一个不会把花踩死的客人。」'
+          : `${npc.name}沉默了很久，说出了一段从未对别人讲过的话。` },
+        failure: { text: '它张了张口，又把话咽了回去。' } });
+    }
   }
   return list.map(topic => ({ ...topic, npcId }));
 }
@@ -8001,6 +8086,9 @@ function openDialogue(playerIndex, npcId) {
   const player = state.players[playerIndex];
   if (!player || !isSelectPhase() || state.resolving) return false;
   if (playerCannotAct(player)) return false;
+  /* 【msg8 §11】同 NPC 单回合最多对话 3 次。 */
+  player.npcTalkThisRound = player.npcTalkThisRound || {};
+  if ((player.npcTalkThisRound[npcId] || 0) >= 3) { player.turn.notice = `${NPCS[npcId]?.name || '对方'}这一回合已经被你说得够多了，先去做点别的。`; return false; }
   const slot = currentSelectSlot();
   if (!slot || player.turn.slots[slot]?.confirmed) return false;
   const npc = NPCS[npcId];
