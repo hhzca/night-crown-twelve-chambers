@@ -1818,6 +1818,22 @@ body {
 .layer-note.warn { color: #f0b6a6; }
 .layer-empty { padding: 22px 10px; font-size: 15px; color: #b9b1c6; text-align: center; }
 
+/* 【msg8 §10】「状态」分页：所有 buff / 诅咒 / 关系常驻列出 */
+.status-page-list { display: grid; gap: 7px; margin-bottom: 12px; }
+.status-page-row { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 7px 10px; border-left: 3px solid #8fa6d8; border-radius: 4px; background: #ffffff0b; }
+.status-page-row.kind-buff { border-left-color: #7bc997; }
+.status-page-row.kind-debuff { border-left-color: #e0a35b; }
+.status-page-row.kind-curse { border-left-color: #d05a6a; }
+.status-page-name { font-size: 15px; color: #ece6f2; }
+.status-page-from { font-size: 12px; color: #a49cb0; }
+.status-page-text { font-size: 13px; color: #cfc7dc; line-height: 1.45; }
+.status-page-relations { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-page-relations b { flex: 1 0 100%; font-size: 14px; color: #cfc7dc; margin-bottom: 2px; }
+.status-rel-chip { padding: 3px 9px; border-radius: 999px; font-size: 13px; background: #ffffff12; color: #cfc7dc; }
+.status-rel-chip.tone-good { background: #7bc99722; color: #9fd4b0; }
+.status-rel-chip.tone-warn { background: #e0a35b22; color: #e8c08a; }
+.status-rel-chip.tone-alert { background: #d05a6a22; color: #e39aa6; }
+
 .layer-detail-head { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
 .layer-detail-head > div { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; }
 .layer-detail-head small { font-size: 13px; color: #a49cb0; }

@@ -1307,6 +1307,32 @@ const dialogueChoice = (spec) => ({
   kind: 'npc', consumesAction: true, rel: 0, usesItem: [], gain: [], loss: [], risk: 1, ...spec
 });
 
+/* ---------------------------------------------------------------------------
+ * 【msg8 §10】NPC Buff / 诅咒登记表
+ * 每个状态都绑定明确机制，可被「状态」分页常驻列出（不依赖悬停）。
+ *   kind: 'buff'   每回合/特定时机给予收益
+ *         'debuff' 每回合或结算时施加惩罚
+ *         'curse'  需黑羽医师/神秘房清除的持久诅咒
+ * 文案里写清「来源 / 层数 / 效果」，让玩家知道它到底在做什么。
+ * ------------------------------------------------------------------------- */
+const NPC_BUFF_INFO = {
+  '园丁的露水': { kind: 'buff', from: '荆棘园丁', text: '每回合首次行动恢复 1 点体力。', tag: 'dewPerk' },
+  '黑羽静默': { kind: 'buff', from: '黑羽医师', text: '本张地图上，你夺取时不会被反制。', tag: 'seizeSteady' },
+  '花径指引': { kind: 'buff', from: '荆棘园丁', text: '搜索时更容易找到关键线索。', tag: 'gardenRoute' },
+  '叙事的余温': { kind: 'buff', from: '守档人', text: '下一次命运改写更不容易失败。', tag: 'fateWarmth' },
+  '看守的默许': { kind: 'buff', from: '典狱官', text: '被送入地牢的概率降低。', tag: 'jailGrace' },
+  /* ---- 诅咒 / 减益 ---- */
+  '蚀痕': { kind: 'curse', from: '蚀冠体系', text: '每层让威慑与防护 -1，仅黑羽医师或神秘房可净化。', stat: 'intimidation' },
+  '绞蔓': { kind: 'curse', from: '枯心园丁', text: '每层让敏捷与防护 -1，藤蔓会缠住你的脚。', stat: 'agility' },
+  '倒影': { kind: 'curse', from: '会说话的植物', text: '每层让理智判定 -1，影子先于你行动。', stat: 'sanity' },
+  '耳语': { kind: 'curse', from: '档案室的废页', text: '每层让感知判定 -1，你总听见不属于自己的声音。', stat: 'perception' },
+  '空腹': { kind: 'curse', from: '灶房', text: '每层让体力上限视作 -1，饥饿让你站不稳。', stat: 'stamina' },
+  '枯心': { kind: 'debuff', from: '枯心园丁', text: '被园丁翻面诅咒：每回合流失 1 点理智。', stat: 'sanity' }
+};
+function npcBuffInfo(name) {
+  return NPC_BUFF_INFO[name] || { kind: 'buff', from: '未知来源', text: '效果不明。' };
+}
+
 const NPCS = {
   healer: {
     id: 'healer', name: '黑羽医师', glyph: '❦', accent: '#8d9bb5', room: 'chapel',
@@ -2936,6 +2962,50 @@ function addRelation(player, npcId, delta) {
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * 【msg8 §12】NPC 暴走
+ * 与 NPC 对话/冒险失败时基础 30% 触发。施加减益 buff（威慑/防护 − 层数）。
+ * 只有黑羽医师（healer）或神秘房能清除。
+ * 【msg8 §16】园丁特殊：暴走翻面为「枯心园丁」，施加绞蔓诅咒。
+ * ------------------------------------------------------------------------- */
+const NPC_BERSERK_BASE = 0.30;
+function npcBerserkChance(npcId, player) {
+  let p = NPC_BERSERK_BASE;
+  // 关系越差越容易暴走；好感满则几乎不暴走。
+  const value = player.npcRelation?.[npcId] ?? 0;
+  if (value >= 3) p = 0.05;
+  else if (value <= -2) p = 0.5;
+  return p;
+}
+function npcBerserk(player, npcId, result) {
+  const npc = NPCS[npcId];
+  if (!npc) return false;
+  if (rng.next() >= npcBerserkChance(npcId, player)) return false;
+  if (npcId === 'gardener') {
+    /* §16 园丁翻面：枯心园丁，绞蔓诅咒 + 冰冷文案 */
+    player.buffs = Array.isArray(player.buffs) ? player.buffs : [];
+    player.buffs.push({ id: 'berserk-vine', label: '绞蔓', stacks: 2, stat: 'agility', perStack: -1, expiresAt: null, sourceUid: 'gardener', note: '枯心园丁的藤蔓缠住你的脚' });
+    pcursesAdd(player, '绞蔓');
+    player.flags = uniqueAdd(player.flags, 'bleakGardener');
+    result.consequences.push('园丁的剪刀停在半空，她的脸翻了过来——枯心园丁。藤蔓从石缝里收紧，缠上你的脚踝。');
+    result.feedback = { ...(result.feedback || {}), berserk: true, berserkName: '枯心园丁' };
+    return true;
+  }
+  const statKey = npcId === 'cook' || npcId === 'jailer' ? 'strength' : 'intimidation';
+  player.buffs = Array.isArray(player.buffs) ? player.buffs : [];
+  const existing = player.buffs.find(buff => buff.label === `${npc.name}的怒意`);
+  if (existing) existing.stacks = Math.min(4, (Number(existing.stacks) || 1) + 1);
+  else player.buffs.push({ id: `berserk-${npcId}`, label: `${npc.name}的怒意`, stacks: 2, stat: statKey, perStack: -1, expiresAt: null, sourceUid: npcId, note: `${npc.name}被激怒，压制你的${STAT_LABEL[statKey]}` });
+  result.consequences.push(`${npc.name}的眼神冷了下来——对方翻脸了。一层怒意压在你的${STAT_LABEL[statKey]}上，只有黑羽医师或神秘房能消。`);
+  result.feedback = { ...(result.feedback || {}), berserk: true, berserkName: npc.name };
+  return true;
+}
+/* 诅咒入库：去重，避免同一次暴走叠两条同名诅咒。 */
+function pcursesAdd(player, name) {
+  player.curses = Array.isArray(player.curses) ? player.curses : [];
+  if (!player.curses.includes(name)) player.curses.push(name);
+}
+
 function choiceTone(entry) {
   if (entry.kind === 'attack') return '#e45b3f';
   if (entry.kind === 'guard') return '#62a6c9';
@@ -3404,6 +3474,7 @@ function layerFoot(player, layer, row) {
 // 行囊展开层：固定三个分类页；详情为同层子页。
 function renderBagLayer(player, layer, row) {
   if (layer.view === 'detail') return renderBagDetail(player, layer, row);
+  if ((layer.page || 0) === 3) return renderBagStatus(player);
   const items = bagPageItems(player.index, layer);
   const categoryNames = ['体系装备', '主动与被动道具', '金钱与关键道具'];
   const activeItems = player.inventory.filter(item => itemCategoryOf(item) === 'active');
@@ -6786,6 +6857,30 @@ async function resolveNpcAction(player, intent, result) {
     const removed = player.statuses.filter(status => negative.has(status));
     player.statuses = player.statuses.filter(status => !negative.has(status));
     if (removed.length) result.consequences.push(`黑羽医师顺手带走了：${removed.join('、')}。`);
+    /* 【msg8 §12】黑羽医师/神秘房同时净化暴走诅咒与对应减益 buff。 */
+    const curseBefore = (player.curses || []).length;
+    player.curses = (player.curses || []).filter(name => !['蚀痕', '绞蔓', '倒影', '耳语', '空腹', '枯心'].includes(name));
+    const buffBefore = (player.buffs || []).length;
+    player.buffs = (player.buffs || []).filter(buff => !(buff.id?.startsWith('berserk-')) && buff.label !== '枯心');
+    if (curseBefore !== (player.curses || []).length || buffBefore !== (player.buffs || []).length) {
+      result.consequences.push('附着在你身上的暴走与诅咒被一并洗去了。');
+    }
+  }
+  /* 【msg8 §10】门槛奖励项：达标即给出高价值私藏（体系装备或关键线索）。 */
+  if (choice.id?.startsWith('threshold-')) {
+    if (check.success) {
+      const sysKey = npcId === 'gardener' ? 'dawn' : (NPC_SYSTEM[npcId] || 'astral');
+      const gift = chooseGearFromSystem(player, sysKey, true);
+      if (gift && canCarryItem(player, gift)) {
+        giveItem(player, gift, result);
+        result.consequences.push(`${npc.name}把压箱底的私藏交给你：${ITEMS[gift].name}。`);
+      } else {
+        applyChanges(player, [['clues', 2]], result);
+        result.consequences.push(`${npc.name}把两段只有他知道的旧事告诉了你。`);
+      }
+    } else {
+      result.consequences.push(`${npc.name}看了你一眼：「等你再深一些，我自会给你。」`);
+    }
   }
   if (choice.shortenJail) shortenJail(player, result, npc.name);
   if (choice.trade) {
@@ -6811,6 +6906,24 @@ async function resolveNpcAction(player, intent, result) {
   addRelation(player, npc.id, choice.rel || 0);
   const relationNow = relationOf(player, npc.id);
   result.consequences.push(`与${npc.name}的关系现在是「${relationNow.label}」。`);
+
+  /* 【msg8 §13】NPC 冒险式对话成功 → 金币 ×1.4 且必掉 1 件体系装备或线索，高于普通房。 */
+  if (check.success && choice.risk >= 2 && npc.id !== 'relicDealer') {
+    const goldBase = 12 + Math.floor((state.round || 1) / 2) * 3;
+    const goldNpc = Math.round(goldBase * 1.4);
+    player.gold = (player.gold || 0) + goldNpc;
+    result.consequences.push(`这段冒险式交谈格外值钱，你收下了 ${goldNpc} 枚金币（普通房只有 ${goldBase}）。`);
+    const rewardFromNpc = rng.next() < 0.5 ? null : chooseVisibleSystemGear(player, player.turn.activeSlot);
+    if (rewardFromNpc && canCarryItem(player, rewardFromNpc)) {
+      giveItem(player, rewardFromNpc, result);
+      result.consequences.push(`${npc.name}还塞给你一件装备：${ITEMS[rewardFromNpc].name}。`);
+    } else {
+      applyChanges(player, [['clues', 1]], result);
+      result.consequences.push(`${npc.name}留下了一条别人不知道的线索。`);
+    }
+  }
+  /* 【msg8 §12】失败时基础 30% 暴走（园丁翻面见 §16）。 */
+  if (!check.success) npcBerserk(player, npc.id, result);
 
   // 结算只讲结果，不讲判定过程：不写属性、不写修正、不写目标值。
   const judgeNote = check.success
@@ -7801,12 +7914,38 @@ function npcTopicChoices(player, npcId) {
       ];
     }
   } else {
-    if (npc.talentTopic?.[talentId]) list = [...npc.topics.slice(0, 2), npc.talentTopic[talentId]];
-    list.push({ id: `gear-offer-${system}`, text: `向${npc.name}打听${spec.name}传闻`,
-      flavor: `偏向${spec.name}，受${STAT_LABEL[spec.stat]}、随身装备与关系影响；可能换到稀有秘仪`, stat: spec.stat, risk: 2,
-      usesItem: spec.tags, gain: [], loss: [['health', -1]],
-      success: { text: `${npc.name}看出你走的是${spec.name}的路，拿出一件适合你的装备。` },
-      failure: { text: `${npc.name}找到了线索，但装备仍藏在更深处。` } });
+    /* 【msg8 §10】非商人 NPC 对话重构为：2 个属性考验 + 1 个门槛奖励项。
+       园丁必含感知考验（花园主检定锚定感知）。门槛项要求 affinityStat 达标，
+       达标后直接给出高价值奖励，否则提示「境界还不到」。 */
+    const gardener = npcId === 'gardener';
+    const tests = npc.topics.filter(topic => topic.consumeAction !== false && !topic.action === false && topic.stat && !topic.requiresStat);
+    const perceptionFirst = gardener
+      ? [...tests].sort((a, b) => (b.stat === 'perception' ? 1 : 0) - (a.stat === 'perception' ? 1 : 0))
+      : tests;
+    const statTests = perceptionFirst.filter(topic => topic.action !== false).slice(0, 2);
+    if (statTests.length < 2) { // 数据兜底：不足两个考验就退回原 3 条
+      list = npc.topics.slice(0, 2);
+    } else {
+      list = statTests;
+    }
+    if (npc.talentTopic?.[talentId]) list = [...list, npc.talentTopic[talentId]];
+    // 门槛奖励项：要求 affinityStat 达标后才能触发（§10）。
+    // 达成门槛即同时给出体系装备（等价于原 gear-offer，但绑定属性门槛）。
+    const affinityStat = gardener ? 'perception' : (GEAR_SYSTEMS[system]?.stat || 'perception');
+    list.push({ id: `threshold-${npcId}`, text: `${npc.name}的私藏`, kind: 'npc', consumesAction: true, rel: 1,
+      flavor: `需要${STAT_LABEL[affinityStat]}达到 9，才会把${spec.name}的私藏交给你`, stat: affinityStat, risk: 2,
+      requiresStat: affinityStat, minStat: 9, gain: [], loss: [],
+      success: { changes: [], text: `${npc.name}见你${STAT_LABEL[affinityStat]}已臻化境，从最深处取出了私藏。` },
+      failure: { text: `${STAT_LABEL[affinityStat]}还不够深，他摇了摇头。` } });
+    // 对话选择键上限 4：若已超出，裁掉末尾（保住 2 考验 + 门槛项）。
+    if (list.length > 4) {
+      const keepTests = list.filter(topic => topic.stat && !topic.requiresStat && topic.id !== 'gear-offer-' + system).slice(0, 2);
+      const thresholdTopic = list.find(topic => topic.id?.startsWith('threshold-'));
+      const talentTopic = npc.talentTopic?.[talentId];
+      list = [...keepTests];
+      if (talentTopic) list.push(talentTopic);
+      if (thresholdTopic && list.length < 4) list.push(thresholdTopic);
+    }
   }
   return list.map(topic => ({ ...topic, npcId }));
 }
@@ -8038,11 +8177,57 @@ function layerSelect(playerIndex, layer, index) {
 function bagPageItems(playerIndex, layer) {
   const player = state.players[playerIndex];
   const page = layer.page || 0;
+  if (page === 3) return []; // 「状态」页不列道具，由 renderBagStatus 单独渲染
   const items = (player.inventory || []).filter(item => {
     const category = itemCategoryOf(item);
     return page === 0 ? category === 'equipment' : page === 1 ? ['active', 'passive', 'reactive'].includes(category) : category === 'relic';
   });
   return page === 2 ? items.filter((item, index) => items.findIndex(other => other.id === item.id) === index) : items;
+}
+
+/* 【msg8 §10】「状态」分页：所有 NPC buff / 诅咒 / 状态常驻列出，
+   每行写清 名称·来源NPC·层数·效果文案。不再依赖悬停 tooltip。 */
+function renderBagStatus(player) {
+  const rel = Object.entries(player.npcRelation || {}).filter(([, value]) => value !== 0);
+  const rows = [];
+  (player.buffs || []).forEach(buff => {
+    const info = npcBuffInfo(buff.label || buff.name || buff.id);
+    const stacks = Number(buff.stacks) || 1;
+    rows.push({
+      label: buff.label || buff.name || buff.id,
+      from: info.from,
+      stacks,
+      kind: info.kind,
+      text: info.text + (buff.expiresAt != null ? `（剩 ${Math.max(0, buff.expiresAt - Number(state.turnSerial || 0))} 回合）` : '（持续）')
+    });
+  });
+  (player.curses || []).forEach(name => {
+    const info = npcBuffInfo(name);
+    rows.push({ label: name, from: info.from, stacks: 1, kind: 'curse', text: info.text });
+  });
+  (player.statuses || []).forEach(name => {
+    const negative = ['受伤', '疲惫', '动摇', '暴露', '虚弱', '恐惧', '囚禁'].includes(name);
+    rows.push({ label: name, from: '本局遭遇', stacks: 1, kind: negative ? 'debuff' : 'buff', text: negative ? '结算与判定会受到压制。' : '当前对你有正面作用。' });
+  });
+  (player.marks || []).forEach(name => {
+    rows.push({ label: '标记 · ' + name, from: '对手施加', stacks: 1, kind: 'debuff', text: '对手已锁定你的破绽。' });
+  });
+  const listBlock = rows.length
+    ? `<div class="status-page-list">${rows.map(row => `<div class="status-page-row kind-${row.kind}">
+        <span class="status-page-name">${row.label}${row.stacks > 1 ? ` ×${row.stacks}` : ''}</span>
+        <span class="status-page-from">来源：${row.from}</span>
+        <span class="status-page-text">${row.text}</span>
+      </div>`).join('')}</div>`
+    : '<div class="layer-empty">眼下你没有携带任何增益或诅咒。</div>';
+  const relBlock = rel.length
+    ? `<div class="status-page-relations"><b>人际关系</b>${rel.map(([npcId, value]) => {
+        const level = relationOf(player, npcId);
+        const owner = (state.npcMaxedOwner || {})[npcId];
+        const locked = owner && owner !== player.id && value >= NPC_RELATION_LEVELS[0].min - 1;
+        return `<span class="status-rel-chip tone-${level.tone || 'plain'}">${NPCS[npcId]?.name || npcId} · ${level.label}${locked ? '（已被他人拉满）' : ''}</span>`;
+      }).join('')}</div>`
+    : '';
+  return `<div class="bag-page-heading">状态与关系</div>${listBlock}${relBlock}`;
 }
 
 function bagSelectIndex(playerIndex, layer, index) {
@@ -8222,7 +8407,7 @@ function layerNextPage(playerIndex, direction = 1) {
 // 行囊固定三页：体系装备、主动与被动、金钱与关键道具。
 function layerPageCount(playerIndex, layer) {
   if (!layer) return 1;
-  if (layer.kind === 'bag') return 3;
+  if (layer.kind === 'bag') return 4; // 体系装备 / 主动被动 / 金钱关键 / 状态
   return 1;
 }
 
