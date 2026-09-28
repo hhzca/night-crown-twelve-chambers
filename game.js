@@ -1149,7 +1149,10 @@ const ROOM_ACTIONS = {
 		option('取走流金', '金币逆着地心往上走，你只需要伸手', 'luck', 1, 'reward', ['gold', 'reward'])
 	],
 	ruinConvergence: [
-		option('召集所有人', '把这一局的账一次算清', 'intimidation', 2, 'menace', ['gather', 'crowd'])
+		option('召集所有人', '把这一局的账一次算清', 'intimidation', 2, 'menace', ['gather', 'crowd']),
+		/* 【msg8 §15】召唤=碎影召集机制：不新增房间，只强化「召集」的暴露效果。 */
+		option('敲响汇流的铜环', '所有错位的门同时朝这一间打开，每个人都露出一张手牌', 'perception', 2, 'mystery', ['gather', 'reveal']),
+		option('把名字刻进汇点', '汇点记住你，之后没人能假装你没来过', 'sanity', 1, 'mystery', ['gather', 'track'])
 	],
 	mirrorSanctum: [
 		option('照见自己', '镜面把你最弱的那一项摊开给你看', 'sanity', 1, 'mystery', ['mirror', 'growth'])
@@ -6227,6 +6230,24 @@ async function resolveNormalAction(player, intent, result) {
     }
   }
 consequenceFor(player, outcome, result, entry);
+  /* 【msg8 §15】汇点「敲响铜环」：成功时暴露同房每人一张手牌（最低属性/持有资源）。 */
+  if ((entry.tags || []).includes('reveal') && (outcome === 'success' || outcome === 'great')) {
+    const others = state.players.filter(other => other.id !== player.id && other.room === player.room && !other.collapsed);
+    if (others.length) {
+      const hints = others.map(other => {
+        const weak = Object.keys(STAT_LABEL).reduce((worst, key) => (Number(other.stats[key] || 0) < Number(other.stats[worst] || 99) ? key : worst), 'strength');
+        return `${other.label}最弱的是${STAT_LABEL[weak]}`;
+      });
+      result.consequences.push(`铜环震响，所有人的手牌翻了一瞬：${hints.join('；')}。`);
+    } else {
+      result.consequences.push('铜环震响，但汇点里此刻只有你一个人。');
+    }
+  }
+  /* 【msg8 §15】汇点「刻名」：把自己标记进全局追踪，便于被他人寻路找到。 */
+  if ((entry.tags || []).includes('track') && (outcome === 'success' || outcome === 'great')) {
+    player.statuses = uniqueAdd(player.statuses, '刻名');
+    result.consequences.push('你的名字留在了汇点上，这一局里没人能假装你没来过。');
+  }
   // 数值延后落账：先出故事，约 0.6 秒后才允许变化条出现（renderResult 读 pendingChanges）。
   const staged = buildRandomChanges(outcome, entry);
   applyChanges(player, staged, null);
