@@ -1906,6 +1906,9 @@ const itemDurability = item => {
 };
 const setupSelection = [0, 2];
 const heroCatalogPage = [1, 1]; // 默认展示新增七人；原版三人始终可切回。
+/* 【msg8 §22】选人键盘导航（拳击选人式）：光标当前在哪一侧 / 哪张卡。 */
+const setupCursor = { side: 0, hero: 0 };
+const setupConfirmed = [false, false];
 let setupMode = 'local';
 let setupBotCount = 2;
 /* 留空则每局自动生成；填入则写进 state.seed 并真正驱动随机源。 */
@@ -2470,6 +2473,65 @@ function renderHeroSetup() {
       applyHeroArt(node, heroIndex, 'portrait');
     });
   });
+  // 键盘光标可见：给当前聚焦的卡加 focus ring。
+  $$('.hero-card').forEach(card => {
+    const p = Number(card.dataset.setupPlayer), h = Number(card.dataset.hero);
+    const on = p === setupCursor.side && h === setupCursor.hero;
+    card.classList.toggle('kb-focus', on);
+    if (setupConfirmed[p]) card.classList.add('locked');
+  });
+}
+
+/* 【msg8 §22】拳击式选人键盘导航：A/D 或 ←/→ 换卡，W/S 或 ↑/↓ / Tab 换侧，
+   Enter/Space/J/K 确认；两侧都确认后 Enter 进游戏。 */
+function setupKeyboardNav(code) {
+  const page = idx => heroCatalogPage[idx];
+  const visible = idx => HEROES.map((_, i) => i).filter(i => page(idx) ? i >= 3 : i < 3);
+  const focusCard = () => { const c = $$('.hero-card').find(n => Number(n.dataset.setupPlayer) === setupCursor.side && Number(n.dataset.hero) === setupCursor.hero); if (c) c.scrollIntoView({ block: 'nearest' }); };
+  const left = code === 'KeyA' || code === 'ArrowLeft';
+  const right = code === 'KeyD' || code === 'ArrowRight';
+  const up = code === 'KeyW' || code === 'ArrowUp';
+  const down = code === 'KeyS' || code === 'ArrowDown';
+  const swapSide = code === 'Tab' || up || down;
+  if (left || right) {
+    const list = visible(setupCursor.side);
+    const at = list.indexOf(setupCursor.hero);
+    const next = at < 0 ? 0 : (at + (right ? 1 : list.length - 1)) % list.length;
+    setupCursor.hero = list[next];
+    setupConfirmed[setupCursor.side] = false;
+    renderHeroSetup(); focusCard();
+    return true;
+  }
+  if (swapSide) {
+    // 单人模式只在一侧；本地双人才切侧。
+    if (setupMode === 'local') setupCursor.side = setupCursor.side ? 0 : 1;
+    const list = visible(setupCursor.side);
+    if (!list.includes(setupCursor.hero)) setupCursor.hero = list[0];
+    renderHeroSetup(); focusCard();
+    return true;
+  }
+  const confirmKeys = ['Enter', 'Space', 'KeyJ', 'KeyK', 'NumpadEnter'];
+  if (confirmKeys.includes(code)) {
+    // 先确认当前侧；已确认则切到另一侧再确认；两侧都确认后进游戏。
+    if (!setupConfirmed[setupCursor.side]) {
+      setupSelection[setupCursor.side] = setupCursor.hero;
+      setupConfirmed[setupCursor.side] = true;
+      renderHeroSetup();
+      return true;
+    }
+    if (setupMode === 'local' && !setupConfirmed[1]) { setupCursor.side = 1; const list = visible(1); if (!list.includes(setupCursor.hero)) setupCursor.hero = list[0]; renderHeroSetup(); return true; }
+    if (setupMode !== 'local' || (setupConfirmed[0] && setupConfirmed[1])) { enterGame(); return true; }
+    return true;
+  }
+  // Q/E 切分页（原版 3 人 / 新增 7 人）
+  if (code === 'KeyQ' || code === 'KeyE') {
+    heroCatalogPage[setupCursor.side] = code === 'KeyQ' ? 0 : 1;
+    const list = visible(setupCursor.side);
+    setupCursor.hero = list[0];
+    renderHeroSetup();
+    return true;
+  }
+  return false;
 }
 
 /* ---------------------------------------------------------------------------
@@ -8170,6 +8232,12 @@ function handleKeydown(event) {
     return;
   }
 
+  /* 【msg8 §22】选人界面键盘导航：setup 阶段整键盘交给选人逻辑。 */
+  if (state.phase === 'setup' && !$('#setup').classList.contains('closed')) {
+    if (setupKeyboardNav(event.code)) event.preventDefault();
+    return;
+  }
+
   /* 【msg8 §23】快捷治疗：选择阶段按 H 用最合理的治疗道具。作用于当前可行动的人类玩家。 */
   if (event.code === 'KeyH' && isSelectPhase()) {
     const pidx = state.players.findIndex(p => p.control === 'human' && !playerCannotAct(p) && isSelectPhase());
@@ -8822,6 +8890,9 @@ function showTitle() {
 function showSetup() {
   $('#titleScreen').classList.add('closed');
   $('#setup').classList.remove('closed');
+  /* 【msg8 §22】每次进入选人界面重置键盘光标与确认状态。 */
+  setupCursor.side = 0; setupCursor.hero = setupSelection[0];
+  setupConfirmed[0] = false; setupConfirmed[1] = false;
   renderHeroSetup();
   const hint = $('#roundHint');
   if (hint) hint.textContent = ROUND_PRESETS.find(preset => preset.rounds === setupRounds)?.hint || '';

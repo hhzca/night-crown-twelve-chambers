@@ -565,6 +565,10 @@ kbd { color: #d7c293; border: 1px solid #ffffff24; border-bottom-width: 2px; bac
 .hero-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .hero-card { min-width: 0; color: #d9d2c9; text-align: left; border: 1px solid #ffffff17; border-radius: 10px; padding: 5px 6px 8px; background: #090a10; cursor: pointer; }
 .hero-card.active { border-color: #d1af6888; box-shadow: 0 0 0 2px #d1af6819, inset 0 0 22px #d1af680e; }
+/* 【msg8 §22】选人键盘导航：焦点框 + 已锁定标记，纯键盘也有拳击选人即视感。 */
+.hero-card.kb-focus { border-color: #d1af68; box-shadow: 0 0 0 2px #d1af6855, 0 0 22px #d1af6833; transform: translateY(-2px) scale(1.03); transition: transform .12s ease, box-shadow .12s ease; }
+.hero-card.locked::after { content: '已锁定 ✓'; position: absolute; top: 4px; right: 6px; font-size: 10px; color: #7bc997; }
+.hero-card { position: relative; }
 .hero-preview { height: 88px; background: url('heroes-v2.png') var(--sprite-pos) center / 300% 100% no-repeat; filter: drop-shadow(0 5px 4px #000); }
 .hero-card b, .hero-card span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hero-card b { font: .66rem Georgia, "Microsoft YaHei", serif; }
