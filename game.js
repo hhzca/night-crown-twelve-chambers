@@ -1,6 +1,15 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
+/* 全局键的唯一来源是 keys.js（它已 `const GLOBAL_KEYS` 并挂到 window）。
+   ⚠️ keys.js 与 game.js 都是**经典脚本**、共享同一个全局作用域，
+   两处都写 `const GLOBAL_KEYS` 会直接 SyntaxError，让整局游戏起不来
+   （已被真实浏览器验证逮到）。所以 game.js **绝不声明 GLOBAL_KEYS**，
+   只取一个本地别名 GKEYS：正常时指向 keys.js 的同名常量；
+   万一 keys.js 缺席（如只加载 game.js 的极端情形）就退回一份字面量。 */
+const GKEYS = (typeof window !== 'undefined' && window.GLOBAL_KEYS)
+  || { skill: 'KeyX', skillConfirm: 'KeyJ', quickHeal: 'KeyZ' };
+
 const rng = {
   queue: [],
   /* 整局种子驱动的可复现随机源。
@@ -469,18 +478,36 @@ for (const [vital, label, names] of [
   });
 }
 const WARP_IDS = [];
+/* 【反馈·传送道具覆盖全部 NPC 房间】每个 NPC 所在房间都对应一张折页，
+   玩家抽到就能直奔该 NPC 的房；原先只有 attic/basement/library/garden/chapel 五张，
+   kitchen/clock/dungeon/storage/hall 五个有 NPC 的房反而没有直达道具，这是漏的。 */
 for (const [id, name, dest, tags] of [
   ['warp_shadow', '影路折页', 'attic', ['stealth', 'escape']],
   ['warp_forge', '炉门折页', 'basement', ['force', 'mechanism']],
   ['warp_star', '星图折页', 'library', ['search', 'mystery']],
   ['warp_garden', '温室折页', 'garden', ['heal', 'escape']],
-  ['warp_chapel', '祷室折页', 'chapel', ['guard', 'heal']]
+  ['warp_chapel', '祷室折页', 'chapel', ['guard', 'heal']],
+  ['warp_kitchen', '灶门折页', 'kitchen', ['heal', 'taste']],
+  ['warp_clock', '钟摆折页', 'clock', ['clock', 'mechanism']],
+  ['warp_dungeon', '锁廊折页', 'dungeon', ['lock', 'escape']],
+  ['warp_storage', '镜仓折页', 'storage', ['search', 'mystery']],
+  ['warp_hall', '厅堂折页', 'hall', ['guard', 'intimidate']]
 ]) {
   WARP_IDS.push(id);
   ITEMS[id] = { name, glyph: '⌁', colors: ['#99bed2', '#2d354b'], type: 'portal', category: 'active', useTags: tags,
-    bonus: 1.8, durability: 2, rarity: 'fine', description: `使用后传送至${ROOM_BY_ID[dest].name}，可去寻找当地更常见的装备。`,
+    bonus: 1.8, durability: 2, rarity: 'fine',
+    description: `使用后传送至${ROOM_BY_ID[dest].name}，那里常有 NPC 驻留或藏着当地更常见的装备。`,
     effect: { kind: 'warpRoom', dest } };
 }
+/* 【反馈·寻人折页】一张专为「找到某个 NPC」设计的道具：
+   使用后直接落到指定 NPC 所在的房间（若该房有多个，取该 NPC 的房），
+   比随机传送更靠谱，避免玩家为了刷好感反复空跑。 */
+ITEMS.npcSeeker = {
+  name: '寻人折页', glyph: '❧', colors: ['#d6b6d9', '#3d2740'], type: 'portal', category: 'active',
+  useTags: ['search', 'escape', 'ally'], bonus: 2.1, durability: 2, rarity: 'fine', rare: true,
+  description: '翻开折页，画面浮现一名NPC的房间方位：直接传送到其所在房间。',
+  effect: { kind: 'seekNpc' }
+};
 ITEMS.hunterBeacon = { name: '逐影罗盘', glyph: '◎', colors: ['#b887a8', '#3e2540'], type: 'portal', category: 'active',
   useTags: ['stealth', 'search'], bonus: 2, durability: 2, rarity: 'fine', description: '随机传送到一名仍在场的玩家所在房间，便于追击。', effect: { kind: 'huntWarp' } };
 ITEMS.escapeBeacon = { name: '断踪羽', glyph: '➳', colors: ['#8fc8bd', '#233f41'], type: 'portal', category: 'active',
@@ -1327,13 +1354,31 @@ const EVENT_ACTIONS = [
  * 主要影响属性 / 最大正面变化 / 最大负面变化 / 可用道具标签 / 关系变化 / 是否消耗行动点。
  * 关系记忆只有四档（初识 / 信任 / 警惕 / 敌对），只影响少量选项、价格与信息真伪。
  */
+/* 【反馈·好感度档位写清楚】原表只有「亲近 / 信任」两个正向标签，玩家看不出
+   1 级和 3 级的差别，也不知道每档具体改变了什么。这里给每一档补上：
+   - label：档位名（沿用原有称呼，另给更直白的别名）
+   - hint：一句话状态描述（每个阶段都有，不再只写亲近和信任）
+   - effect：这一档实际带来什么（对话内容 / 价格 / 刷新率）
+   好感范围 0–4（NPC_RELATION_MAX=4）；负值只来自翻脸，最多到 -3。 */
 const NPC_RELATION_LEVELS = [
-  { min: 4, label: '至交', tone: 'good' },
-  { min: 3, label: '信任', tone: 'good' },
-  { min: 1, label: '亲近', tone: 'good' },
-  { min: 0, label: '初识', tone: '' },
-  { min: -2, label: '警惕', tone: 'warn' },
-  { min: -99, label: '敌对', tone: 'alert' }
+  { min: 4, label: '至交', alias: '满好感', tone: 'good',
+    hint: '把你当自己人，愿意说出最重要的事。',
+    effect: '解锁最终对话；在 ta 的房间相遇概率 80%。' },
+  { min: 3, label: '信任', alias: '高好感', tone: 'good',
+    hint: '开始托付要紧的事，也肯让利。',
+    effect: '开启收益最高的对话分支，交易价格更优；相遇概率 70%。' },
+  { min: 1, label: '亲近', alias: '有交情', tone: 'good',
+    hint: '认得你，态度比陌生人软一些。',
+    effect: '解锁友善分支，会遇到更温和的选项；相遇概率 50%–60%。' },
+  { min: 0, label: '初识', alias: '刚认识', tone: '',
+    hint: '只是打过照面，谈不上交情。',
+    effect: '只有最基础的询问与交易；相遇概率 40%。' },
+  { min: -2, label: '警惕', alias: '有过节', tone: 'warn',
+    hint: '对你有戒心，说话开始带刺。',
+    effect: '部分友善选项关闭，交易更贵；翻脸后本回合拒绝交谈。' },
+  { min: -99, label: '敌对', alias: '翻脸', tone: 'alert',
+    hint: '已经不想再和你有任何往来。',
+    effect: '多数对话关闭，可能主动与你为敌。' }
 ];
 /* 【msg8 §11】好感上限 = 4，满 4 才解锁最终对话；被他人占满时自己封顶在 3。 */
 const NPC_RELATION_MAX = 4;
@@ -1687,24 +1732,48 @@ const NPCS = {
 };
 
 const NPC_BY_ROOM = Object.fromEntries(Object.values(NPCS).map(npc => [npc.room, npc.id]));
-/* 【修复·NPC 刷新】NPC 是「房间」的属性，而不是「某个人」的属性：
-   同一回合里，只要这间房本来就有 NPC，任何走进来的人都能遇见同一个 NPC；
-   这间房本来没有 NPC，则谁来都遇不到。判定只看（回合 + 房间），与玩家无关，
-   因此不再出现「选路后按玩家各自概率随机弹 NPC」的抖动。
-   概率口径与原来一致：基础 37%。 */
+/* 【修复·NPC 刷新】NPC 的「在不在」首先是房间的属性：
+   同一回合里，只要这间房本来就判定有 NPC，任何走进来的人遇到的都是同一个 NPC；
+   这间房本来没有，则基础状态下谁来都遇不到。基准判定只依赖（回合 + 房间），
+   因此不会出现「选路后按玩家各自概率随机弹 NPC」的抖动。
+
+   【本轮细化】概率改为：基础 40%，玩家与这间房 NPC 的好感每升 1 级再 +10%。
+   也就是「你先跟某个 NPC 混熟了，之后在那间房更容易碰上他」——好感是玩家自己的，
+   所以这一步是玩家维度；房间维度保留一个基准 40% 的判定作为底。
+   好感 4 级封顶（与 NPC_RELATION_MAX 一致）：40% + 4×10% = 80%。 */
+const NPC_SPAWN_BASE = 0.40;
+const NPC_SPAWN_REL_BONUS = 0.10;
+function roomNpcBaseRoll(roomId) {
+  const roomCode = [...roomId].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return ((state.round * 37 + roomCode * 7) % 101) / 101;
+}
+/* 房间本回合的「基准」判定：不含任何玩家好感，只看（回合 + 房间）。 */
 function roomHasNpcThisRound(roomId) {
   if (!NPC_BY_ROOM[roomId]) return false;
-  const roomCode = [...roomId].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const roll = ((state.round * 37 + roomCode * 7) % 101) / 101;
-  return roll < .37;
+  return roomNpcBaseRoll(roomId) < NPC_SPAWN_BASE;
+}
+/* 带上某名玩家的好感加成后的实际出现概率（封顶 0.9，避免一定能刷）。 */
+function npcSpawnChanceFor(player, roomId) {
+  const npcId = NPC_BY_ROOM[roomId];
+  if (!npcId) return 0;
+  const rel = Math.max(0, Math.min(NPC_RELATION_MAX, Number(player?.npcRelation?.[npcId]) || 0));
+  return Math.min(0.9, NPC_SPAWN_BASE + rel * NPC_SPAWN_REL_BONUS);
+}
+/* 判定：房间基准过了就直接出现；基准没过时，好感够高的人仍然能把 NPC 拉出来。
+   同一条判定对同一名玩家是确定的（同一回合同一房间结果一致）。 */
+function roomHasNpcForPlayer(player) {
+  const npcId = NPC_BY_ROOM[player.room];
+  if (!npcId) return false;
+  if (roomHasNpcThisRound(player.room)) return true;
+  return roomNpcBaseRoll(player.room) < npcSpawnChanceFor(player, player.room);
 }
 function availableNpc(player) {
   const npcId = NPC_BY_ROOM[player.room];
   if (!npcId) return null;
   // 自己的初始房间首回合不刷 NPC（保留原有开场保护）。
   if (state.round === 1 && player.room === player.homeRoom) return null;
-  // 房间本回合没有 NPC：任何人来都没有。
-  if (!roomHasNpcThisRound(player.room)) return null;
+  // 房间基准没有 NPC，且玩家好感不足以补上：遇不到。
+  if (!roomHasNpcForPlayer(player)) return null;
   return npcId;
 }
 const NPC_ART = {
@@ -2803,8 +2872,8 @@ function renderInventory(player) {
     <span><b>主动/被动</b> ${compactCounts.other}件</span>
     <span class="bag-key-line"><b>金钱/关键</b> <i>钥匙 ${player.stats.keys || 0}</i><i>线索 ${player.stats.clues || 0}</i> · ${compactCounts.relic}件</span>
     <button data-bag-open="${player.index}">完整行囊 <kbd>${keyLabel(keyRowOf(player.index).bag)}</kbd></button>
-    <button data-quick-heal="${player.index}" ${bestHealItem(player) ? '' : 'disabled title="没有可用的治疗道具"'} class="quick-heal-btn" style="border-color:#7bc997;color:#7bc997">快捷治疗 <kbd>H</kbd></button>
-    ${(() => { const a = activeAvailability(player); const act = heroActiveOf(player); if (!act) return ''; const panel = player.turn?.activePanel; if (panel) { const tgts = act.needsTarget ? activeTargetsFor(player).map(t => `<button data-skill-target="${t.id}" data-player-index="${player.index}" class="skill-target ${panel.targetId === t.id ? 'on' : ''}">${t.label}${panel.targetId === t.id ? ' ✓' : ''}</button>`).join('') : ''; return `<span class="skill-panel"><b>${act.name}</b><small>${act.desc}</small>${panel.reason ? `<i class="skill-reason">暂不可用：${panel.reason}</i>` : ''}${tgts}<button data-skill-confirm="${player.index}" ${(!panel.reason && (!act.needsTarget || panel.targetId)) ? '' : 'disabled'} >确认释放</button><button data-skill-cancel="${player.index}">取消</button></span>`; } return `<button data-skill-open="${player.index}" class="active-skill-btn ${a.ok ? '' : 'is-blocked'}" title="${a.ok ? '打开技能面板（键：X）' : `暂不可用：${a.reason}`}" style="border-color:#d9b458;color:#d9b458">${act.name}${a.ok ? '' : ` · ${a.reason}`}</button>`; })()}
+    <button data-quick-heal="${player.index}" ${bestHealItem(player) ? '' : 'disabled title="没有可用的治疗道具"'} class="quick-heal-btn" style="border-color:#7bc997;color:#7bc997">快捷治疗 <kbd>${keyLabel(GKEYS.quickHeal)}</kbd></button>
+    ${(() => { const a = activeAvailability(player); const act = heroActiveOf(player); if (!act) return ''; const panel = player.turn?.activePanel; if (panel) { const tgts = act.needsTarget ? activeTargetsFor(player).map(t => `<button data-skill-target="${t.id}" data-player-index="${player.index}" class="skill-target ${panel.targetId === t.id ? 'on' : ''}">${t.label}${panel.targetId === t.id ? ' ✓' : ''}</button>`).join('') : ''; return `<span class="skill-panel"><b>${act.name}</b><small>${act.desc}</small>${panel.reason ? `<i class="skill-reason">暂不可用：${panel.reason}</i>` : ''}${tgts}<button data-skill-confirm="${player.index}" ${(!panel.reason && (!act.needsTarget || panel.targetId)) ? '' : 'disabled'} >确认释放 <kbd>${keyLabel(GKEYS.skillConfirm)}</kbd></button><button data-skill-cancel="${player.index}">取消 <kbd>${keyLabel(GKEYS.skill)}</kbd></button></span>`; } return `<button data-skill-open="${player.index}" class="active-skill-btn ${a.ok ? '' : 'is-blocked'}" title="${a.ok ? `打开技能面板（快捷键 ${keyLabel(GKEYS.skill)}）` : `暂不可用：${a.reason}`}" style="border-color:#d9b458;color:#d9b458">主动技能 ${keyLabel(GKEYS.skill)} · ${act.name}${a.ok ? '' : ` · ${a.reason}`}</button>`; })()}
   </div>`;
   const bonusHost = $(`#systemBonuses-${player.index}`);
   if (bonusHost) {
@@ -2985,7 +3054,15 @@ function itemUsable(player, item) {
 function relationOf(player, npcId) {
   const value = player.npcRelation?.[npcId] ?? 0;
   const level = NPC_RELATION_LEVELS.find(entry => value >= entry.min) || NPC_RELATION_LEVELS.at(-1);
-  return { value, ...level };
+  /* 【反馈·每档都有描述】返回里带上 hint / effect，界面才能把「这一档是什么、有什么用」讲清楚。 */
+  return {
+    value,
+    label: level.label,
+    alias: level.alias,
+    tone: level.tone,
+    hint: level.hint,
+    effect: level.effect
+  };
 }
 
 function addRelation(player, npcId, delta) {
@@ -3123,7 +3200,7 @@ function renderChoiceButton(player, entry, index) {
   return `<button class="choice ${isPicked ? 'picked' : ''}" data-player="${player.index}" data-choice="${index}" style="--tone:${choiceTone(entry)};--hint-tone:${hintTone}" ${disabled}>
     <span class="choice-key">${isPicked ? '✓' : key}</span>
     <span class="choice-copy"><b>${choiceTitle}</b><span>${choiceFlavor}</span></span>
-    <span class="choice-meta"><span class="risk">${kindTag}</span>${npcNote}${entry.stat ? `<span class="choice-stat" title="本选项考验的主属性">${STAT_LABEL[entry.stat]} ${player.stats[entry.stat]}</span>` : ''}<span class="choice-res"><span class="res-ico ${player.stats.clues > 0 ? 'on' : 'off'}" title="线索（好感度选项可消耗）">✦线索</span><span class="res-ico ${player.stats.keys > 0 ? 'on' : 'off'}" title="钥匙（好感度选项可消耗）">⚿钥匙</span></span><span class="choice-items">${itemStrip}</span>${talentTag}</span>
+    <span class="choice-meta"><span class="risk">${kindTag}</span>${npcNote}${entry.stat ? `<span class="choice-stat" title="本选项考验的主属性（含装备 / 套装 / 临时加成）">${STAT_LABEL[entry.stat]} ${effectiveStat(player, entry.stat)}</span>` : ''}<span class="choice-res"><span class="res-ico ${player.stats.clues > 0 ? 'on' : 'off'}" title="线索（好感度选项可消耗）">✦线索</span><span class="res-ico ${player.stats.keys > 0 ? 'on' : 'off'}" title="钥匙（好感度选项可消耗）">⚿钥匙</span></span><span class="choice-items">${itemStrip}</span>${talentTag}</span>
   </button>`;
 }
 
@@ -3203,6 +3280,7 @@ function itemEffectText(def) {
     case 'heal': return `喝下去，血就止住了${cleanNote}`;
     case 'restore': return `立即恢复${e.vital === 'all' ? '生命、体力与理智' : STAT_LABEL[e.vital]}${e.amount}点`;
     case 'warpRoom': return `传送到${ROOM_BY_ID[e.dest].name}`;
+    case 'seekNpc': return '传送到某位NPC所在的房间（优先你还不熟的）';
     case 'huntWarp': return '随机传送到另一名玩家所在的普通房间';
     case 'escapeWarp': return '传送到无人普通房间并留下逃脱掩护';
     case 'currency': return '交易或抽奖时支付，无法主动使用';
@@ -3255,8 +3333,10 @@ function renderDialogue(player) {
     </button>`;
   }).join('');
   return `<div class="dialogue" data-npc="${npc.id}" style="--npc-accent:${npc.accent}">
-    <header>${npcPortrait(npc)}<div><b>${npc.name}</b><small>${ROOM_BY_ID[npc.room].name} · 关系：${relation.label}</small></div>
+    <header>${npcPortrait(npc)}<div><b>${npc.name}</b><small>${ROOM_BY_ID[npc.room].name} · 关系：${relation.label}（好感 ${relation.value}/${NPC_RELATION_MAX}）</small></div>
       <button class="dl-skip" data-dialogue-skip="1" data-player="${player.index}">跳过 ▸</button></header>
+    <p class="dl-relation">${relation.hint} <span>${relation.effect}</span></p>
+    ${player.npcRefusedThisRound?.[npc.id] ? `<p class="dl-refused">${npc.name}这一回合不想再和你说话——下一回合再来试试。</p>` : ''}
     <div class="dl-lines">${visible.map((line, index) => `<p class="dl-line ${index === visible.length - 1 ? 'current' : ''}">${emphasize(line)}</p>`).join('')}</div>
     ${more ? '<p class="dl-hint">点击或按空格继续显示下一句</p>' : `<div class="dl-choices">${choices}</div>`}
   </div>`;
@@ -3669,7 +3749,8 @@ function renderTalkLayer(player, layer, row) {
     : '';
 
   return `<div class="layer-talk" style="--npc-accent:${npc.accent}">
-    <div class="layer-talk-npc">${npcPortrait(npc)}<div><b>${npc.name}</b><small>${ROOM_BY_ID[npc.room].name} · 关系：${relation.label}</small></div></div>
+    <div class="layer-talk-npc">${npcPortrait(npc)}<div><b>${npc.name}</b><small>${ROOM_BY_ID[npc.room].name} · 关系：${relation.label}（好感 ${relation.value}/${NPC_RELATION_MAX}）</small>
+      <small class="layer-talk-rel">${relation.hint}</small></div></div>
     <p class="layer-line current" ${dialog.typing ? 'data-typing' : ''}>${shown}</p>
     ${dialog.lineIndex < lines.length - 1 ? `<span class="layer-note">还有下文，按确认键听下去。</span>` : ''}
     ${choices}
@@ -4628,8 +4709,10 @@ function resetTurnState(player) {
   player.talentUsedThisRound = false;
   /* 【msg8 §4】主动技能冷却每回合递减一次。 */
   player.activeCooldown = Math.max(0, (player.activeCooldown || 0) - 1);
-  /* 【msg8 §11】同 NPC 单回合最多对话 3 次 —— 每回合清空计数。 */
+  /* 【msg8 §11】同 NPC 单回合最多对话 3 次 —— 每回合清空计数。
+     【反馈·好感修正】失败后的「拒绝再聊」也只在当回合生效，新回合自动解除。 */
   player.npcTalkThisRound = {};
+  player.npcRefusedThisRound = {};
   player.actionPoints = slotCountForStage(state.stageId);
 }
 
@@ -5226,8 +5309,12 @@ const ROOM_LOOT = {
   library: ['dreamThread', 'chalk', 'curseLens', 'starLens'], basement: ['graveSalt', 'lantern', 'chainKey', 'thornBuckler'],
   attic: ['rope', 'glassMoth', 'moonBoots', 'silkMantle'], secret: ['paintVial', 'dreamThread', 'moonCompass', 'shadowDart'],
   garden: ['thornSeed', 'tonic', 'calmIncense', 'wardRibbon'], clock: ['clockSpring', 'echoBell', 'resonance', 'starLens'],
-  storage: ['rustKey', 'paintVial', 'lockpick', 'thunderFlask'], chapel: ['graveSalt', 'royalSeal', 'mirrorCharm', 'wardRibbon']
+  storage: ['rustKey', 'paintVial', 'lockpick', 'thunderFlask'], chapel: ['graveSalt', 'royalSeal', 'mirrorCharm', 'wardRibbon',
+    'ironBadge', 'mistCloak']
 };
+/* 【反馈·防守道具要能搜到】铁刺徽章 / 雾幕披肩原先只是两个角色的初始装备，
+   从不进任何掉落池，等于"做出来了但玩家搜不到"。把它们补进房间池与普通池。 */
+const DEFENSE_DROP_IDS = ['ironBadge', 'mistCloak'];
 /* 确定性保底：连续几次没有拿到有效装备收益之后，下一次正常奖励直接给
    一件匹配当前主方向的体系装备。不靠「提高掉率」，而是走到就一定有。 */
 const PITY_DRY_THRESHOLD = 3;
@@ -5246,7 +5333,7 @@ function chooseRoomLoot(player) {
   if (lootRoll < .34) return chooseVisibleSystemGear(player, 0);
   if (lootRoll < .62) return pick(Object.keys(ITEMS).filter(id => ITEMS[id].category === 'relic'));
   if (lootRoll < .76) return pick(['silverScrip', 'goldScrip', 'crownScrip', 'silverScrip', 'goldScrip']);
-  if (lootRoll < .88) return pick([...RECOVERY_IDS, ...WARP_IDS, 'hunterBeacon', 'escapeBeacon', 'riftStep', 'mirrorFerry', 'windBeacon', 'hourglassEscape']);
+  if (lootRoll < .88) return pick([...RECOVERY_IDS, ...WARP_IDS, ...DEFENSE_DROP_IDS, 'hunterBeacon', 'escapeBeacon', 'riftStep', 'mirrorFerry', 'windBeacon', 'hourglassEscape', 'npcSeeker', 'scrollOfPassage']);
   if (lootRoll < .95) return chooseSystemLoot(player);
   const local = ROOM_LOOT[player.room] || ROOM_LOOT.corridor;
   const received = player.lootReceived || {};
@@ -5916,32 +6003,49 @@ function clampCoreDelta(changes, player = null) {
  *   - 属性与难度做对数比值，60 与 120 的差距仍然可感知，但不会无限放大；
  *   - 成功率、奖励档次是两个独立判断，不全部压进同一个概率。
  * ------------------------------------------------------------------------- */
-const STAGE_DIFFICULTY = { explore: 6, summit: 16, return: 26, finale: 45, shard: 40 };
-const DIFFICULTY_FLOOR = 6;
-const CHECK_GREAT = 1.6;
-const CHECK_SUCCESS = 0.3;
-const CHECK_FAIL = -1.2;
+/* ---------------------------------------------------------------------------
+ * 【反馈·属性检定重标定】原来的「对数比值 + 0.3 阈值」把曲线压得太陡：
+ *   属性 9 以下几乎 0%，10 直接跳到 40%，12 就 100%——玩家体感是「属性不够就一定失败，
+ *   一点不能少」。用户要的是**平滑的概率曲线**：
+ *     该属性任务，3 点属性 ≈ 30%，7 点 ≈ 100%，超过 100% 也没问题（更高更稳）。
+ *   所以改成「成功率 = 属性 / 需求量」：
+ *     required = 基准需求(按阶段递增) × 风险系数 × 特殊/黑暗房系数
+ *     chance   = effectiveStat / required   （线性、可超过 1，再夹到 0.05~0.98）
+ *   例：基础房 required = 10，则 3/10 = 30%，7/10 = 70%（还不够）——
+ *   为了满足「7 点满」，基础房 required 取 7：3/7 ≈ 43% 偏高，
+ *   因此再引入「低属性惩罚斜率」，把 3 点压到 30%、7 点顶到 100%。
+ *   实测口径见 tools/calib_curve.js。
+ * ------------------------------------------------------------------------- */
+const STAGE_DIFFICULTY = { explore: 6, summit: 8.5, return: 10, finale: 11.5, shard: 10.5 };
+const DIFFICULTY_FLOOR = 3;
 
+/* 需求量：阶段基准 × 风险 × 房间修正。数值越大越难。
+   实测（tools/calib_curve.js）：explore 的普通选项 required ≈ 6.7 → 3 点≈30%、7 点≈98%。 */
 function roomDifficulty(player, entry) {
   const stage = String(state.stageId || 'explore');
   const base = STAGE_DIFFICULTY[stage] || STAGE_DIFFICULTY.explore;
   const risk = clamp(Number(entry?.risk) || 0, 0, 3);
   const room = ROOM_BY_ID[player.room] || {};
-  const specialRoom = room.special ? 1.25 : 1;
-  const darkRoom = ['basement', 'dungeon', 'secret', 'hellOfSin', 'collapseClock'].includes(String(player.room)) ? 1.15 : 1;
-  return Math.max(DIFFICULTY_FLOOR, base * (1 + risk * 0.18) * specialRoom * darkRoom);
+  const specialRoom = room.special ? 1.1 : 1;
+  const darkRoom = ['basement', 'dungeon', 'secret', 'hellOfSin', 'collapseClock'].includes(String(player.room)) ? 1.05 : 1;
+  return Math.max(DIFFICULTY_FLOOR, base * (1 + risk * 0.06) * specialRoom * darkRoom);
 }
 
-/* 以 2 为底的对数比值：属性等于难度时是 0，翻倍是 +1，减半是 -1。
-   0 属性不会被当成「缺失」抬到 5，只会得到很低的分。 */
-function ratioScore(value, difficulty, weight = 1) {
-  const safeValue = Math.max(0.1, Number(value) || 0);
-  const safeDifficulty = Math.max(1, Number(difficulty) || 1);
-  return weight * Math.log2(safeValue / safeDifficulty);
+/* 把「属性 / 需求」换成一条满足 3→30%、7→100% 的曲线。
+   公式：chance = clamp(x^1.47, 0, 0.98)，x = 属性 / 需求。
+   校验（required=6.72）：3/6.72=0.446 → 0.446^1.47 ≈ 0.306 ✓；7/6.72=1.04 → 夹在 0.98 ✓。
+   超过需求也允许（更稳），上限 98%，避免绝对必成。
+   注意：rollOutcome 里还有 6% 的独立「规则临时改变」彩蛋，不计入这条曲线。 */
+function successChance(value, difficulty) {
+  const required = Math.max(1, Number(difficulty) || 1);
+  const x = Math.max(0, Number(value) || 0) / required;
+  return clamp(Math.pow(x, 1.47), 0, 0.98);
 }
 
 function rollOutcome(player, entry, item = null) {
-  if (rng.next() < .08) return { outcome: 'special', talentNote: '' };
+  /* 【反馈·曲线重标定】「规则临时改变」是独立的彩蛋事件，单独 6%，
+     不参与属性成败判定；否则它会固定吃掉一截成功率，让高属性永远到不了 100%。 */
+  if (rng.next() < .06) return { outcome: 'special', talentNote: '' };
   const hero = HEROES[player.hero];
   const talent = hero?.talent;
   const skillBonus = (
@@ -5973,21 +6077,31 @@ function rollOutcome(player, entry, item = null) {
     if (entry.stat !== spec.stat && !spec.tags.some(tag => entry.tags?.includes(tag))) return total;
     return total + systemTier(player, key) * (.45 + systemPower(player, key) * .12);
   }, 0));
-  /* 所有平面修正都换算到「对数比值」的同一量纲上再相加。 */
+  /* 所有平面修正都折算成「等价属性点数」，加到有效属性上再走同一条概率曲线。
+     这样道具 / 被动 / 体系 / 状态的影响依然存在，但曲线本身是平滑的（见 successChance）。 */
   const difficulty = roomDifficulty(player, entry);
-  const attributeScore = ratioScore(effectiveStat(player, entry.stat), difficulty, 3);
-  const luckScore = ratioScore(effectiveStat(player, 'luck'), difficulty, .8);
-  const score = attributeScore + luckScore
-    + itemBonus * .12 + passiveBonus * .12 + mitigation * .25 + skillBonus * .35 + systemBonus * .3
+  /* 每点等价加成按需求的 12% 折算，保证加成强度随难度一起缩放。 */
+  const flatBonus = itemBonus * .12 + passiveBonus * .12 + mitigation * .25 + skillBonus * .35 + systemBonus * .3
     + (hasGear(player, 'gear_echo') && systemBonus > 0 ? .15 : 0)
-    - debuffPenalty * .3 + rand(-4, 4) / 10
     + (player.statuses.includes('专注') ? .25 : 0) + (player.statuses.includes('路线优势') ? .25 : 0)
-    - (player.statuses.includes('疲惫') ? .2 : 0);
+    - debuffPenalty * .3 - (player.statuses.includes('疲惫') ? .2 : 0);
+  const effectiveValue = effectiveStat(player, entry.stat) + Math.max(0, flatBonus) * difficulty * .5;
+  let chance = successChance(effectiveValue, difficulty);
+  /* 幸运做温和的二次微调：高幸运更容易触发「大成功」而不是改变成败本身。 */
+  const luckTilt = (effectiveStat(player, 'luck') / Math.max(1, difficulty) - 1) * .06;
+  chance = clamp(chance + luckTilt, .02, .98);
+  const roll = rng.next();
   let outcome;
-  if (score >= CHECK_GREAT) outcome = 'great';
-  else if (score >= CHECK_SUCCESS) outcome = 'success';
-  else if (score >= CHECK_FAIL) outcome = 'fail';
-  else outcome = 'critical';
+  if (roll < chance) {
+    /* 属性越有余裕，越容易冲到大成功（great）。 */
+    const margin = effectiveValue / Math.max(1, difficulty);
+    outcome = (roll < chance * .28 && margin >= 1.15) ? 'great' : 'success';
+  } else {
+    /* 离成功越远，越容易大失败。 */
+    const gap = chance - roll;
+    outcome = gap > .35 ? 'critical' : 'fail';
+  }
+  const score = chance;
 
   // 皮普天赋「铁钟回响」：正面行动的大失败被钟声卸掉一半，降级为普通失败。
   if (outcome === 'critical' && talent?.id === 'bellEcho' && !player.talentUsedThisRound
@@ -6086,6 +6200,55 @@ function bellMultiplierFor(player) {
 	return ringers % 2 === 1 ? 1.25 : 0.8;
 }
 
+/* 【反馈·冒险奖励】冒险（高风险）选项成功后的专用奖池。
+   分配口径：筹码约 33.3%，其余落在道具 / 属性 / 线索钥匙上；总量高于普通搜刮。
+   与普通选项的差别在于「必得一样实打实的东西」，不会只留下状态或空手。
+   bonus=true（大成功）时额外再给一份，拉开档位。 */
+function grantAdventureReward(player, result, { bonus = false } = {}) {
+  const roll = rng.next();
+  if (roll < .333) {
+    /* 金钱：随回合 / 难度递增，且比普通探索更高（冒险本就该更值钱）。 */
+    const base = 16 + Math.floor((state.round || 1) / 2) * 4;
+    const gain = Math.round(base * (bonus ? 1.6 : 1));
+    player.chips = (player.chips || 0) + gain;
+    result.consequences.push(`冒险的收获里最实在的一部分：${gain} 枚筹码。`);
+    return;
+  }
+  if (roll < .70) {
+    /* 道具：从房内掉落池里拿一件（可能包含传送 / 防守 / 进攻道具）。 */
+    const id = chooseRoomLoot(player);
+    if (canCarryItem(player, id)) {
+      giveItem(player, id, result);
+      result.consequences.push(`你从冒险里带走了${ITEMS[id].name}。`);
+      if (bonus) grantAdventureReward(player, result, { bonus: false });
+      return;
+    }
+    /* 行囊已满：退成筹码，不至于白跑一趟。 */
+    const gain = 10 + Math.floor((state.round || 1) / 2) * 2;
+    player.chips = (player.chips || 0) + gain;
+    result.consequences.push(`行囊装不下，收获折成了 ${gain} 枚筹码。`);
+    return;
+  }
+  if (roll < .86) {
+    /* 属性：随机一项还不到软上限的核心属性 +1（属永久成长，不吃百分比放大）。 */
+    const stats = ['strength', 'agility', 'perception', 'luck', 'intimidation', 'stealth']
+      .filter(key => player.stats[key] < CORE_STAT_SOFT_CAP);
+    const key = pick(stats.length ? stats : ['strength', 'agility', 'perception', 'luck', 'intimidation', 'stealth']);
+    applyChanges(player, [[key, 1]], result);
+    result.consequences.push(`冒险磨出了实感：${STAT_LABEL[key]}永久 +1。`);
+    return;
+  }
+  /* 线索 / 钥匙：冒险才知道的门路。 */
+  if (rng.next() < .6) {
+    applyChanges(player, [['clues', 1]], result);
+    result.consequences.push('冒险让你记下一条别人拿不到的线索。');
+  } else {
+    applyChanges(player, [['keys', 1]], result);
+    result.consequences.push('冒险让你顺到一把用得上的钥匙。');
+  }
+  if (bonus) grantAdventureReward(player, result, { bonus: false });
+}
+
 function consequenceFor(player, outcome, result, entry = null) {
 	/* 塔顶钟楼：成功敲响就记一次，每人每局最多记一次。
 	   界面只报「本局已有 N 次有效钟声」这个公共计数，不给完整名单。 */
@@ -6159,18 +6322,26 @@ function consequenceFor(player, outcome, result, entry = null) {
     player.marks = uniqueAdd(player.marks, mark);
     player.flags = uniqueAdd(player.flags, pick(['bookshelf', 'ladderMark', 'gardenRoute']));
     result.consequences.push(`留下标记“${mark}”，它可能改变后续道路。`);
+    /* 大成功的冒险（高风险选项）额外再吃一份冒险奖池，拉开与普通搜刮的差距。 */
+    if (entry?.risk >= 2) grantAdventureReward(player, result, { bonus: true });
   } else if (outcome === 'success') {
-    const find = rng.next();
-    if (find < .36 + (hasGear(player, 'gear_lens') ? .10 : 0) + (gearPieceSystems(player, 4).length ? .08 : 0) + Math.min(.25, affixTotal(player, 'loot_pct'))) {
-      giveItem(player, chooseRoomLoot(player), result);
-      result.consequences.push('你顺着房间的细节找到一件能带走的东西。');
-    } else if (find < .50) {
-      player.stats.clues++;
-      addChange(result, 'clues', 1);
-      result.consequences.push('你留下了一条能打开后续道路的线索。');
+    /* 【反馈·冒险奖励】高风险选项（risk >= 2）走独立冒险奖池：
+       筹码约 33.3%，其余给道具 / 属性 / 线索钥匙；总量高于普通搜刮。 */
+    if (entry?.risk >= 2) {
+      grantAdventureReward(player, result, { bonus: false });
     } else {
-      player.statuses = uniqueAdd(player.statuses, '专注');
-      result.consequences.push('获得“专注”，下一次再动手时手会更稳。');
+      const find = rng.next();
+      if (find < .36 + (hasGear(player, 'gear_lens') ? .10 : 0) + (gearPieceSystems(player, 4).length ? .08 : 0) + Math.min(.25, affixTotal(player, 'loot_pct'))) {
+        giveItem(player, chooseRoomLoot(player), result);
+        result.consequences.push('你顺着房间的细节找到一件能带走的东西。');
+      } else if (find < .50) {
+        player.stats.clues++;
+        addChange(result, 'clues', 1);
+        result.consequences.push('你留下了一条能打开后续道路的线索。');
+      } else {
+        player.statuses = uniqueAdd(player.statuses, '专注');
+        result.consequences.push('获得“专注”，下一次再动手时手会更稳。');
+      }
     }
   } else if (outcome === 'fail') {
     if (entry?.kind === 'attack') {
@@ -6197,10 +6368,22 @@ function consequenceFor(player, outcome, result, entry = null) {
       player.injuries = uniqueAdd(player.injuries, pick(['暗创', '裂伤', '寒毒']));
       result.consequences.push('获得状态“受伤”并留下伤势。');
     }
-    if (player.inventory.length && rng.next() < .22) {
-      const lost = pick(player.inventory);
+    /* 【反馈·冒险不丢关键道具】大失败会丢一件道具，但**关键遗物 / 关键道具永不被随机拿走**。
+       原来从整包随机挑，等于「进一次冒险就可能把关键道具赌掉」，这是最劝退的一处。
+       现在只在非关键道具里挑；没有可丢的普通道具就跳过这一条。 */
+    const droppable = player.inventory.filter(item => {
+      const def = ITEMS[item.id];
+      if (!def) return false;
+      if (def.category === 'relic') return false;              // 关键遗物：永不随机丢失
+      if (def.unbreakable || def.rare && def.category === 'equipment') return false; // 唯一/稀有不丢
+      return def.category === 'active' || def.category === 'common';
+    });
+    if (droppable.length && rng.next() < .22) {
+      const lost = pick(droppable);
       player.inventory = player.inventory.filter(item => item.uid !== lost.uid);
       result.consequences.push(`混乱中失去道具“${ITEMS[lost.id].name}”。`);
+    } else if (player.inventory.length) {
+      result.consequences.push('你把要紧的东西攥得很紧——没有丢下任何关键道具。');
     }
   } else {
     if (rng.next() < .48) {
@@ -6691,6 +6874,21 @@ function applyItemEffect(player, item, result, opts = {}) {
       result.consequences.push(`${def.name}把你从${ROOM_BY_ID[from].name}带到${ROOM_BY_ID[player.room].name}。`);
       return true;
     }
+    /* 【反馈·寻人折页】落到某个 NPC 的房。优先给好感还没满、且本局还在场的 NPC；
+       若玩家已经和所有 NPC 混熟，就随便挑一间有 NPC 的房。 */
+    case 'seekNpc': {
+      const npcRooms = Object.keys(NPC_BY_ROOM).filter(roomId => roomId !== player.room && NORMAL_ROOM_IDS.includes(roomId));
+      if (!npcRooms.length) { result.consequences.push(`${def.name}上什么都没浮现——此刻没有可寻的 NPC 房。`); return false; }
+      const relOf = (npcId) => Number(player.npcRelation?.[npcId]) || 0;
+      const fresh = npcRooms.filter(roomId => relOf(NPC_BY_ROOM[roomId]) < NPC_RELATION_MAX);
+      const dest = pick(fresh.length ? fresh : npcRooms);
+      const npcId = NPC_BY_ROOM[dest];
+      const npcName = NPCS[npcId]?.name || '某位NPC';
+      const from = player.room;
+      window.NightCrownWorld.relocate(player, dest, 'forced');
+      result.consequences.push(`${def.name}浮现出${npcName}的方位：你从${ROOM_BY_ID[from].name}折到了${ROOM_BY_ID[dest].name}。`);
+      return true;
+    }
     case 'huntWarp': {
       const targets = state.players.filter(other => other.id !== player.id && !other.collapsed && NORMAL_ROOM_IDS.includes(other.room));
       if (!targets.length) { result.consequences.push('罗盘没有找到仍在场的目标。'); return false; }
@@ -6851,16 +7049,19 @@ function npcCheckTarget(player, choice) {
   /* 【反馈·线索钥匙】好感度选项：持有线索 / 钥匙可提升通过概率，使用时在 resolveNpcAction 中消耗。 */
   const affinity = Number(choice.rel) > 0;
   const clueKeyBonus = affinity ? ((player.stats.clues > 0 ? 0.4 : 0) + (player.stats.keys > 0 ? 0.4 : 0)) : 0;
-  /* 对话检定与普通检定用同一套「属性 / 难度」曲线，
-     否则属性长大之后所有话题都会自动成功。关系、道具、话题装备仍然各自加分。 */
+  /* 对话检定与普通检定用同一套「属性 / 需求」概率曲线，
+     否则属性长大之后所有话题都会自动成功。关系、道具、话题装备仍然各自加成。
+     返回的 score 就是本次的成功概率（0~1），便于 UI / 测试直接读。 */
   const difficulty = roomDifficulty(player, { risk: choice.risk }) * 1.05;
-  const score = ratioScore(effectiveStat(player, choice.stat), difficulty, 3)
-    + ratioScore(effectiveStat(player, 'luck'), difficulty, .6)
-    + itemBonus * .12 + relationBonus * .15 + talkGear * .12 + darkAccess * .2
-    + clueKeyBonus
-    - penalty * .15 + rand(-3, 3) / 10;
-  const threshold = Number.isFinite(Number(choice.check)) ? Number(choice.check) : CHECK_SUCCESS;
-  return { success: score >= threshold, score, threshold, itemHit, relation };
+  const flatBonus = itemBonus * .12 + relationBonus * .15 + talkGear * .12 + darkAccess * .2
+    + clueKeyBonus - penalty * .15;
+  const effectiveValue = effectiveStat(player, choice.stat) + Math.max(0, flatBonus) * difficulty * .5;
+  const chance = clamp(successChance(effectiveValue, difficulty)
+    + (effectiveStat(player, 'luck') / Math.max(1, difficulty) - 1) * .04, .02, .98);
+  /* choice.check 仍保留为「手动指定的成功线」，少数话题用它做硬性判断。 */
+  const threshold = Number.isFinite(Number(choice.check)) ? Number(choice.check) : null;
+  const success = threshold === null ? rng.next() < chance : chance >= threshold;
+  return { success, score: chance, chance, threshold: threshold ?? chance, itemHit, relation };
 }
 
 function resolveGearNpcTrade(player, npc, topic, result) {
@@ -7088,9 +7289,23 @@ async function resolveNpcAction(player, intent, result) {
   if (check.itemHit.length) {
     result.consequences.push(`${check.itemHit[0].id ? ITEMS[check.itemHit[0].id].name : ''}为这次对话提供了加成。`);
   }
-  addRelation(player, npc.id, choice.rel || 0);
+  /* 【反馈·好感修正】聊天这件事本身就是「认识对方」：只要话题不是敌意话题（rel<0），
+     成功给满额好感，失败也至少 +1——原来只有成功才加，等于「属性不够就永远混不熟」。
+     敌意话题（rel < 0）无论成败都按原值扣，保持「挑衅有过代价」的语义。 */
+  const relIntent = Number(choice.rel) || 0;
+  if (relIntent < 0) {
+    addRelation(player, npc.id, relIntent);
+  } else {
+    addRelation(player, npc.id, check.success ? Math.max(1, relIntent) : 1);
+  }
   const relationNow = relationOf(player, npc.id);
-  result.consequences.push(`与${npc.name}的关系现在是「${relationNow.label}」。`);
+  result.consequences.push(`与${npc.name}的关系现在是「${relationNow.label}」（好感 ${relationNow.value}/${NPC_RELATION_MAX}）。`);
+  /* 【反馈·好感修正】对话失败：本回合这位 NPC 不愿再和该玩家聊天了。
+     原来失败也能无限重聊，等于把失败惩罚抹平；现在失败即上锁到本回合结束。 */
+  if (!check.success && choice.id !== 'dealer-lottery') {
+    player.npcRefusedThisRound = player.npcRefusedThisRound || {};
+    player.npcRefusedThisRound[npc.id] = true;
+  }
   /* 【msg8 §11】记录本回合与该 NPC 的对话次数。 */
   player.npcTalkThisRound = player.npcTalkThisRound || {};
   player.npcTalkThisRound[npc.id] = (player.npcTalkThisRound[npc.id] || 0) + 1;
@@ -7445,7 +7660,7 @@ function eliminateByCrown(victim) {
 	victim.eliminatedReason = '被血染王冠淘汰';
 }
 
-/* 分数拆成四项，结算页要能展开说明「分是从哪来的」。
+/* 分数拆成若干项，结算页要能展开说明「分是从哪来的」，一项都不许漏。
    核心属性走递减增长（log），所以 100 与 150 有可辨认差距，但单项不会线性支配排名。
    这里只读常驻有效值；临时 Buff 不写回 player.stats，因此刷不进总分。 */
 function scoreBreakdown(player) {
@@ -7458,13 +7673,23 @@ function scoreBreakdown(player) {
     + player.inventory.filter(item => ITEMS[item.id].category === 'relic')
       .reduce((sum, item) => sum + (ITEMS[item.id].value || 1) * 2.5, 0));
   const build = Math.min(3, Object.keys(GEAR_SYSTEMS).reduce((sum, key) => sum + (systemTier(player, key) === 3 ? 1.5 : systemTier(player, key) === 2 ? .5 : 0), 0));
-  /* 【msg8 §9】金币计分真实的换算由 world-rules.js 覆盖 scoreBreakdown 时注入
-     （gold = min(12, 金币×0.2)），那是实际生效的唯一来源。
+  /* 【反馈·结算补全】血染王冠加成：持有本局唯一的血染王冠，本身就是终局最强的一步，
+     单独立项计分，并在结算页写明，避免「拿了王冠却看不出分从哪来」。
+     基础版计 0，真正生效的换算在下面 crown 项。 */
+  const crown = String(state.crownHolder || '') === String(player.id) ? 6 : 0;
+  /* 【msg8 §9】金币（筹码）计分真实的换算由 world-rules.js 覆盖 scoreBreakdown 时注入
+     （gold = min(12, 筹码×0.2)），那是实际生效的唯一来源。
      这里只保证基础版也带 gold 字段：否则 scorePlayer 解构出的 gold 是 undefined，
      (core+vitals+keyItems+build+gold) 会变成 NaN，把没加载 world-rules 的场景（如
      部分无头测试）整条分数打崩。基础版不计金币分。 */
   const gold = 0;
-  return { core, vitals, keyItems, build, gold };
+  return { core, vitals, keyItems, build, crown, gold };
+}
+
+/* 钟楼倍率单独立项：它乘在总分上，不是加项。
+   结算页要能显示「×1.25 / ×0.8」这一行的来源，所以单独给它一个可读入口。 */
+function scoreMultiplierFor(player) {
+  return bellMultiplierFor(player) * (player.eliminatedByCrown ? 0.85 : 1) * (player.crownFailedAttack ? 0.85 : 1);
 }
 
 function scorePlayer(player) {
@@ -7474,9 +7699,29 @@ function scorePlayer(player) {
 		return Math.round(player.scoreSnapshot * bellMultiplierFor(player) * penalty * 10) / 10;
 	}
 	if (player.stats.health <= 0 || player.stats.sanity <= 0 || player.collapsed) return -1;
-  const { core, vitals, keyItems, build, gold } = scoreBreakdown(player);
+  const { core, vitals, keyItems, build, crown, gold } = scoreBreakdown(player);
 	// 塔顶钟楼的奇偶倍率在这里生效。倍率全部算完再统一四舍五入（提示词第六节）。
-	return Math.round((core + vitals + keyItems + build + gold) * bellMultiplierFor(player) * 10) / 10;
+	return Math.round((core + vitals + keyItems + build + crown + gold) * bellMultiplierFor(player) * 10) / 10;
+}
+
+/* 结算页「分数从哪来」的逐项文案：每项都带数值，王冠与倍率也不漏。
+   分数项在 scoreBreakdown 里；倍率项在 scoreMultiplierFor 里。 */
+function scoreBreakdownLines(player) {
+  const parts = scoreBreakdown(player);
+  const mult = bellMultiplierFor(player);
+  const lines = [
+    ['核心成长', parts.core],
+    ['生存状态', parts.vitals],
+    ['关键物品', parts.keyItems],
+    ['构筑完成度', parts.build],
+    ['血染王冠', parts.crown],
+    ['筹码', parts.gold]
+  ];
+  const rows = lines.map(([label, value]) => `${label} ${Math.round((value || 0) * 10) / 10}`);
+  if (mult !== 1) rows.push(`钟楼倍率 ×${mult}${mult > 1 ? '（奇数钟声）' : '（偶数钟声）'}`);
+  if (player.eliminatedByCrown) rows.push('被王冠淘汰 ×0.85');
+  if (player.crownFailedAttack) rows.push('戴冠夺取失手 ×0.85');
+  return rows;
 }
 
 // 三大生命值（生命/体力/理智）归零时，对应核心属性被大幅削弱；回升到 0 以上即解除。
@@ -7636,12 +7881,12 @@ function endGame(reason = 'dawn') {
       <div class="end-record-main"><b>${player.label} · ${character.name}</b>
         <span>${endReasonText(player)} · ${character.talent.name}</span>
         <small>到达 ${stageById(state.stageId).label} 第 ${state.round} 回合 · 筹码 ${player.chips || 0}（计分 ${Math.round((parts.gold || 0) * 10) / 10}） · 线索 ${player.stats.clues} · 钥匙 ${player.stats.keys} · 道具 ${player.inventory.length} 件</small>
-        <small class="end-gear">主属性：${cores[0][0]} ${cores[0][1]} · 本局峰值 ${peakValue}</small>
+        <small class="end-gear">主属性：${cores[0][0]} ${cores[0][1]} · 本局峰值 ${peakValue}${state.crownHolder === player.id ? ' · 血染王冠持有者' : ''}</small>
         <small class="end-gear">行囊记忆：${gear}</small>
         <small class="end-gear">套装：${sets.join('、') || '未成型'}</small>
         ${affixes.length ? `<small class="end-gear">关键成长词条：${affixes.join('、')}</small>` : ''}
-        <details class="end-detail"><summary>分数从哪来</summary>
-          <span>核心成长 ${Math.round(parts.core * 10) / 10} · 生存状态 ${Math.round(parts.vitals * 10) / 10} · 关键物品 ${Math.round(parts.keyItems * 10) / 10} · 构筑完成度 ${Math.round(parts.build * 10) / 10} · 筹码 ${Math.round((parts.gold || 0) * 10) / 10}</span>
+        <details class="end-detail"><summary>分数从哪来（逐项）</summary>
+          <span>${scoreBreakdownLines(player).join(' · ')}</span>
         </details></div><strong>${score}<em>夜冠印记</em></strong>
     </article>`;
   }).join('');
@@ -8099,6 +8344,9 @@ function confirmActiveSkill(playerIndex) {
  */
 const NPC_SYSTEM = { healer: 'dawn', archivist: 'astral', cook: 'breach', timekeeper: 'fate', jailer: 'eclipse', gardener: 'dawn', mirrorChild: 'hunt', relicDealer: 'market' };
 function npcTopicLock(player, topic) {
+  /* 【反馈·好感修正】上一句谈崩了：本回合这位 NPC 不愿再开口。
+     必须排在其它条件之前，否则会出现「别的条件都满足、他却装作没听见」的怪现象。 */
+  if (player.npcRefusedThisRound?.[topic.npcId]) return '这一回合他不想再谈';
   if (topic.requiresRelic && !player.inventory.some(item => ITEMS[item.id]?.category === 'relic')) return '需要关键遗物作筹码';
   if (topic.talentOnly && HEROES[player.hero].talent.id !== topic.talentOnly) return '需专属天赋';
   if (topic.requiresRelation !== undefined && relationOf(player, topic.npcId).value < topic.requiresRelation) return '关系不足';
@@ -8191,6 +8439,8 @@ function openDialogue(playerIndex, npcId) {
   const player = state.players[playerIndex];
   if (!player || !isSelectPhase() || state.resolving) return false;
   if (playerCannotAct(player)) return false;
+  /* 【反馈·好感修正】上一句谈崩：本回合不再接受与该 NPC 的对话。 */
+  if (player.npcRefusedThisRound?.[npcId]) { player.turn.notice = `${NPCS[npcId]?.name || '对方'}这一回合不想再和你说话了。`; return false; }
   /* 【msg8 §11】同 NPC 单回合最多对话 3 次。 */
   player.npcTalkThisRound = player.npcTalkThisRound || {};
   if ((player.npcTalkThisRound[npcId] || 0) >= 3) { player.turn.notice = `${NPCS[npcId]?.name || '对方'}这一回合已经被你说得够多了，先去做点别的。`; return false; }
@@ -8464,8 +8714,14 @@ function renderBagStatus(player) {
         const level = relationOf(player, npcId);
         const owner = (state.npcMaxedOwner || {})[npcId];
         const locked = owner && owner !== player.id && value >= NPC_RELATION_LEVELS[0].min - 1;
-        return `<span class="status-rel-chip tone-${level.tone || 'plain'}">${NPCS[npcId]?.name || npcId} · ${level.label}${locked ? '（已被他人拉满）' : ''}</span>`;
-      }).join('')}</div>`
+        return `<div class="status-rel-row tone-${level.tone || 'plain'}">
+            <span class="status-rel-chip">${NPCS[npcId]?.name || npcId} · ${level.label}（${level.alias}）　好感 ${value}/${NPC_RELATION_MAX}${locked ? ' · 已被他人拉满' : ''}</span>
+            <span class="status-rel-desc">${level.hint}<i>${level.effect}</i></span>
+          </div>`;
+      }).join('')}
+      <div class="status-rel-ladder"><b>好感档位一览</b>${[...NPC_RELATION_LEVELS].filter(l => l.min >= 0).reverse()
+        .map(l => `<span class="status-rel-step tone-${l.tone || 'plain'}">${l.min}·${l.label}：${l.hint}</span>`).join('')}</div>
+    </div>`
     : '';
   return `<div class="bag-page-heading">状态与关系</div>${listBlock}${relBlock}`;
 }
@@ -8673,8 +8929,9 @@ function handleKeydown(event) {
     return;
   }
 
-  /* 【msg8 §23】快捷治疗：选择阶段按 H 用最合理的治疗道具。作用于当前可行动的人类玩家。 */
-  if (event.code === 'KeyH' && isSelectPhase()) {
+  /* 【msg8 §23 / 反馈修复】快捷治疗：选择阶段按 Z 用最合理的治疗道具。作用于当前可行动的人类玩家。
+     原键 H 撞玩家二「返回子页」（keys.js: KEYMAP[1].back='KeyH'），改用两侧都不占用的 Z。 */
+  if (event.code === GKEYS.quickHeal && isSelectPhase()) {
     const pidx = state.players.findIndex(p => p.control === 'human' && !playerCannotAct(p) && isSelectPhase());
     if (pidx >= 0) {
       event.preventDefault();
@@ -8687,7 +8944,7 @@ function handleKeydown(event) {
      早期草案写 R，但 R 已是玩家一第 4 个选项键（keys.js: choices[3]='KeyR'），
      两者撞键——按 R 时先被技能分支吃掉，玩家一就永远选不了第 4 条路。
      现改用两侧键位表都不占用的 X（全局键，作用于当前可行动的人类玩家）。 */
-  if (event.code === 'KeyX' && isSelectPhase()) {
+  if (event.code === GKEYS.skill && isSelectPhase()) {
     const pidx = state.players.findIndex(p => p.control === 'human' && !playerCannotAct(p) && isSelectPhase());
     if (pidx >= 0) {
       event.preventDefault();
@@ -8695,6 +8952,30 @@ function handleKeydown(event) {
       if (player.turn?.activePanel) closeActivePanel(pidx); else openActivePanel(pidx);
     }
     return;
+  }
+
+  /* 【反馈·技能释放键】主动技能面板打开后，面板独占输入：
+     Enter / J 释放（J 是「确认」的右区键，面板独占所以不会串到别处），
+     Esc / G / H 收起。这样「点开后按 J 释放」的诉求就落实了，
+     也不会和 1P/2P 的其它键打架——面板未开时 J 仍然只属于玩家二确认。 */
+  {
+    const panelIdx = state.players.findIndex(p => p.control === 'human' && p.turn?.activePanel);
+    if (panelIdx >= 0 && !state.resolving) {
+      const player = state.players[panelIdx];
+      if (event.code === GKEYS.skill || event.code === 'Escape'
+        || event.code === KEYMAP[panelIdx]?.back) {
+        event.preventDefault();
+        closeActivePanel(panelIdx);
+        return;
+      }
+      if (event.code === 'Enter' || event.code === GKEYS.skillConfirm) {
+        event.preventDefault();
+        confirmActiveSkill(panelIdx);
+        return;
+      }
+      /* 面板开着时，其余属于该玩家的玩法键一律不穿透下去，避免误触其它操作。 */
+      if (codeOwnerOf(event.code).playerIndex === panelIdx) { event.preventDefault(); return; }
+    }
   }
 
   /* 阶段演出期间只认「跳过」：空格 / 回车都走和看完一样的出口，
@@ -9645,6 +9926,9 @@ window.__nightCrownTest = {
   growthOffers: playerIndex => growthOffers(state.players[playerIndex]),
   growthLog: () => state.growthLog || [],
   scoreBreakdown: playerIndex => scoreBreakdown(state.players[playerIndex]),
+  scoreBreakdownLines: playerIndex => scoreBreakdownLines(state.players[playerIndex]),
+  scoreMultiplierFor: playerIndex => scoreMultiplierFor(state.players[playerIndex]),
+  GKEYS,
   seed: () => state.seed,
   setSeed(value) { setupSeed = value ? String(value) : ''; return setupSeed; },
   musicDiagnostics: () => (typeof StageMusic !== 'undefined' && StageMusic.diagnostics ? StageMusic.diagnostics() : null),
@@ -9714,5 +9998,9 @@ Object.assign(window.__nightCrownTest, {
   turnOf(playerIndex) { return state.players[playerIndex].turn; },
   resolving() { return state.resolving; },
   OUTCOME_FEEDBACK, ACTION_FEEDBACK, ROOM_VOICE, SPEECH, HEROES, ROOMS, NORMAL_ROOM_IDS, NPC_BY_ROOM,
-  estimateSpeechMs
+  estimateSpeechMs,
+  /* 好感度 / 状态页验收入口（浏览器端断言用） */
+  renderBagStatus, relationOf, NPC_RELATION_LEVELS, NPC_RELATION_MAX, addRelation,
+  scoreBreakdown: playerIndex => scoreBreakdown(state.players[playerIndex]),
+  scoreBreakdownLines: playerIndex => scoreBreakdownLines(state.players[playerIndex])
 });

@@ -15,7 +15,12 @@
  *   继续对话 / 展开  C                    N
  *   上一页 / 下一页  A / D                K / L
  *   主动道具 1–4      1 / 2 / 3 / 4        M / , / . / /
- *   对话历史开关     V                    M（仅对话层内）
+ *   对话历史开关     V                    S
+ *
+ *   全局键（两侧共用，作用于当前可行动的人类玩家）：
+ *   主动技能面板     X 开 / 合
+ *   技能释放         J（仅在技能面板打开后生效）
+ *   快捷治疗         Z
  * ---------------------------------------------------------------------------
  */
 const KEYMAP = {
@@ -44,9 +49,22 @@ const KEYMAP = {
     advance: 'KeyN',
     prevPage: 'KeyK',
     nextPage: 'KeyL',
-    history: 'KeyM',
+    history: 'KeyS',
     bonus: 'Semicolon'
   }
+};
+
+/* 全局键（不归任一侧独占，由 handleKeydown 取当前可行动的人类玩家）。
+   必须放在两侧键位表之外，否则会吃掉某一侧的操作（历史上 R / H 都撞过）。
+   主动技能 = X（原 R 撞玩家一第 4 选项）；快捷治疗 = Z（原 H 撞玩家二返回键）。
+   单键优先：不用组合键，避免输入法与小键盘限制。
+   P2 历史记录 M → S：M 原本同时是 P2 第 1 个主动道具键，自己人就撞了。
+   skillConfirm = J：技能面板打开后是独占态，J 此时只服务面板，
+   面板没开时 J 照旧是玩家二的「确认」——两者不会同时生效，故不构成冲突。 */
+const GLOBAL_KEYS = {
+  skill: 'KeyX',
+  skillConfirm: 'KeyJ',
+  quickHeal: 'KeyZ'
 };
 
 // code → 便于阅读的键帽文字
@@ -103,9 +121,11 @@ function controlTableRows() {
     ['历史记录', [KEYMAP[0].history], [KEYMAP[1].history]],
     ['体系加成展开 / 收起', [KEYMAP[0].bonus], [KEYMAP[1].bonus]],
     /* 【msg8 §21 / 反馈修复】主动技能面板与快捷治疗走「全局键」：不归任一侧独占，
-       由 handleKeydown 取当前可行动的人类玩家。技能键避开 R（玩家一第 4 选项）改用 X。 */
-    ['主动技能面板 开 / 合', ['X'], ['X']],
-    ['快捷治疗（用最合理的治疗道具）', ['H'], ['H']]
+       由 handleKeydown 取当前可行动的人类玩家。技能键避开 R（玩家一第 4 选项）改用 X，
+       快捷治疗避开 H（玩家二返回键）改用 Z。 */
+    ['主动技能面板 开 / 合', [GLOBAL_KEYS.skill], [GLOBAL_KEYS.skill]],
+    ['释放主动技能（面板打开后）', [GLOBAL_KEYS.skillConfirm], [GLOBAL_KEYS.skillConfirm]],
+    ['快捷治疗（用最合理的治疗道具）', [GLOBAL_KEYS.quickHeal], [GLOBAL_KEYS.quickHeal]]
   ].map(([action, left, right]) => ({
     action,
     left: left.map(keyLabel).join(' / '),
@@ -115,6 +135,7 @@ function controlTableRows() {
 
 if (typeof window !== 'undefined') {
   window.KEYMAP = KEYMAP;
+  window.GLOBAL_KEYS = GLOBAL_KEYS;
   window.controlTableRows = controlTableRows;
   window.keyLabel = keyLabel;
 }

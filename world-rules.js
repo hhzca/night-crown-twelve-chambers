@@ -221,7 +221,10 @@
   const oldBreakdown=scoreBreakdown;
   scoreBreakdown=function(p){return {...oldBreakdown(p),gold:Math.min(12,Math.max(0,p.chips||0)*.2)};};
   const rawScore=p=>Object.values(scoreBreakdown(p)).reduce((a,b)=>a+b,0);
-  scorePlayer=function(p){if(p.scoreSnapshot!=null)return Math.round(p.scoreSnapshot*bellMultiplierFor(p)*(p.eliminatedByCrown?.85:1)*10)/10;if(!active(p))return -1;return Math.round(rawScore(p)*bellMultiplierFor(p)*10)/10;};
+  /* 与 game.js 的 scorePlayer 口径一致：快照只吃钟楼倍率 + 王冠罚则；
+     存活者走 rawScore（已含 crown / gold 两项）× 钟楼倍率。 */
+  const crownPenalty=p=>(p.eliminatedByCrown?.85:1)*(p.crownFailedAttack?.85:1);
+  scorePlayer=function(p){if(p.scoreSnapshot!=null)return Math.round(p.scoreSnapshot*bellMultiplierFor(p)*crownPenalty(p)*10)/10;if(!active(p))return -1;return Math.round(rawScore(p)*bellMultiplierFor(p)*10)/10;};
   eliminateByCrown=function(p){if(p.eliminatedByCrown)return;p.scoreSnapshot=rawScore(p);p.eliminatedByCrown=true;p.collapsed=true;p.eliminatedReason='被血染王冠淘汰';state.eliminatedIds=[...new Set([...(state.eliminatedIds||[]),p.id])];};
   const originalCollapses=processCollapses;
   processCollapses=function(){const result=originalCollapses();state.eliminatedIds=state.players.filter(p=>p.collapsed).map(p=>p.id);afterBatch();return result;};

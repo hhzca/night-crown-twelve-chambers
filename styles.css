@@ -1305,6 +1305,10 @@ body {
 .dialogue header div { min-width: 0; }
 .dialogue header b { display: block; font: .68rem Georgia, "Microsoft YaHei", serif; color: #efe6d6; }
 .dialogue header small { display: block; color: #8e8a95; font-size: .44rem; margin-top: 2px; }
+/* 【反馈·好感度每档都有描述】对话标题下方补一行"当前关系是什么、有什么用"。 */
+.dl-relation { margin: 3px 10px 0; padding: 4px 8px; border-radius: 7px; background: #ffffff0a; color: #b9b2c8; font-size: .46rem; line-height: 1.55; }
+.dl-relation span { display: block; color: #8f89a3; }
+.dl-refused { margin: 3px 10px 0; padding: 4px 8px; border-radius: 7px; background: #d05a6a1c; color: #e39aa6; font-size: .46rem; }
 .dl-skip {
   margin-left: auto;
   border: 1px solid #ffffff1c;
@@ -1836,6 +1840,16 @@ body {
 .status-rel-chip.tone-good { background: #7bc99722; color: #9fd4b0; }
 .status-rel-chip.tone-warn { background: #e0a35b22; color: #e8c08a; }
 .status-rel-chip.tone-alert { background: #d05a6a22; color: #e39aa6; }
+/* 【反馈·好感度每档都要有描述】关系行展开成「名字+档位 / 状态说明 / 实际影响」，并附一张档位一览。 */
+.status-rel-row { flex: 1 0 100%; display: flex; flex-direction: column; gap: 2px; padding: 5px 8px; border-radius: 8px; background: #ffffff08; }
+.status-rel-chip.tone-good { }
+.status-rel-desc { font-size: 12px; color: #b9b2c8; line-height: 1.5; }
+.status-rel-desc i { font-style: normal; color: #8f89a3; display: block; }
+.status-rel-ladder { flex: 1 0 100%; display: flex; flex-direction: column; gap: 2px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #ffffff14; }
+.status-rel-step { font-size: 12px; color: #b9b2c8; line-height: 1.5; }
+.status-rel-step.tone-good { color: #9fd4b0; }
+.status-rel-step.tone-warn { color: #e8c08a; }
+.status-rel-step.tone-alert { color: #e39aa6; }
 
 .layer-detail-head { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
 .layer-detail-head > div { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; }
@@ -1863,6 +1877,7 @@ body {
   border-bottom: 1px solid #ffffff14;
 }
 .layer-talk-npc small, .layer-history-npc small { font-size: 13px; color: #a49cb0; }
+.layer-talk-npc .layer-talk-rel { display: block; font-size: 12px; color: #8f89a3; margin-top: 1px; }
 .npc-portrait { width:56px; height:66px; object-fit:contain; flex:none; filter:drop-shadow(0 5px 6px #0009); }
 .stage-npc { position:absolute; z-index:7; right:5%; bottom:17%; width:108px; display:grid; justify-items:center; pointer-events:none; filter:drop-shadow(0 8px 8px #000b); }
 .stage-npc[hidden] { display:none; }
