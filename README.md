@@ -9,6 +9,13 @@
 
 游戏没有任何后端、没有账号、不联网，双击 `index.html` 就能开始。
 
+## 🎮 在线试玩
+
+**<https://hhzca.github.io/night-crown-twelve-chambers/>**
+
+由 GitHub Pages 托管，打开即玩，无需下载。首次进入会播放开场 CG 与音乐，
+建议戴耳机、使用桌面浏览器。
+
 ---
 
 ## 目录
