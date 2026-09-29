@@ -10,7 +10,7 @@
   function checksum(t){let h=2166136261;for(let i=0;i<t.length;i++)h=Math.imul(h^t.charCodeAt(i),16777619);return(h>>>0).toString(16);}
   function notice(t,bad=false){const n=$('#saveStatus');n.textContent=t;n.classList.toggle('bad',bad);}
   function rememberRooms(){for(const p of state.players){p.visitedRooms||=[];if(ROOM_BY_ID[p.room]&&!p.visitedRooms.includes(p.room))p.visitedRooms.push(p.room);}}
-  function stable(){return !state.resolving&&phases.has(state.phase)&&!window.NightRoam?.active;}
+  function stable(){return !state.resolving&&phases.has(state.phase);}
   function pack(){
     if(!stable())throw Error('当前步骤还在结算');rememberRooms();
     const data=decode(encode({state,rng:{seedValue:rng.seedValue,state:rng.state,queue:rng.queue},itemSerial}));
@@ -50,7 +50,7 @@
   }
   function finish(){if(state.headless)return;try{localStorage.removeItem(KEY);localStorage.removeItem(BACKUP);}catch(_){}lastGood=null;lastPayload='';refreshContinue();notice('本局已结束 · 可以开始新的旅程');}
   function onRender(){
-    if(state.headless||restoring||state.phase==='setup'||window.NightRoam?.active)return;rememberRooms();
+    if(state.headless||restoring||state.phase==='setup')return;rememberRooms();
     if(state.phase==='end'){finish();return;}if(queued)return;queued=true;
     queueMicrotask(()=>{queued=false;if(state.headless||restoring)return;if(stable()){save();if(pendingExit){pendingExit=false;quit();}}});
   }
@@ -73,11 +73,11 @@
     let v;try{v=raw?unpack(raw):read();if(!v.data)throw Error('没有可继续的有效存档');}catch(e){notice(e.message,true);return false;}
     if(state.resolving){notice('请等当前步骤完成再读档');return false;}restoring=true;
     try{
-      if(window.NightRoam?.active)window.NightRoam.stop();const token=state.token+1;resetToSetup();
+      const token=state.token+1;resetToSetup();
       state=v.data.state;state.token=token;state.resolving=false;state.headless=false;
       rng.seedValue=v.data.rng.seedValue;rng.state=v.data.rng.state;rng.queue=[...v.data.rng.queue];itemSerial=v.data.itemSerial;
       state.lastInputAt=Date.now();state.lastRoundAdvanceAt=0;setupMode=state.mode;setupBotCount=state.botCount;
-      if(window.NightRoam)window.NightRoam.selected=false;$('#gameShell').style.display='';
+      $('#gameShell').style.display='';
       for(const id of['titleScreen','setup'])$('#'+id).classList.add('closed');
       document.querySelectorAll('.modal').forEach(n=>{n.classList.remove('open');n.setAttribute('aria-hidden','true');});
       renderPlayerShells();renderAll();state.players.filter(p=>p.control==='human').forEach(p=>setNarrative(p.index,ROOM_BY_ID[p.room].desc,ROOM_BY_ID[p.room].icon));
@@ -92,14 +92,14 @@
     if(!save(true)){openSaves();return;}closeModal();state.token++;state.phase='setup';state.resolving=false;finishStageTransition();document.querySelectorAll('.modal').forEach(n=>{n.classList.remove('open');n.setAttribute('aria-hidden','true');});showTitle();refreshContinue();
   }
   function exportSave(){if(stable())save(true);const raw=lastGood||read().raw;if(!raw){notice('没有可导出的存档',true);return;}const url=URL.createObjectURL(new Blob([raw],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='夜冠-双影存档-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-  function openSaves(){const v=read();openModal('存档管理',`<p>每个行动步骤完成后自动保存。关掉浏览器后，可从标题页继续；导出文件可迁移到另一台电脑或浏览器。</p><p>${v.data?`${esc(stageById(v.data.state.stageId).label)} · 第 ${v.data.state.round} 回合 · ${esc(new Date(v.box.savedAt).toLocaleString())}${v.recovered?' · 已恢复备用存档':''}`:'暂无有效的经典双影存档'}</p><div class="complete-tabs"><button id="saveNow">立即保存</button><button id="exportSave">导出存档</button><button id="importSave">导入存档</button><button id="saveQuit">保存并返回标题</button></div><p>结算进行中保留上一个完整节点，当前步骤结束后自动更新。存储不可用时请导出文件。夜行进度独立保存，可从标题页“继续夜行”恢复。</p>`);$('#saveNow').onclick=()=>save(true);$('#exportSave').onclick=exportSave;$('#saveQuit').onclick=quit;$('#importSave').onclick=()=>$('#saveFile').click();}
+  function openSaves(){const v=read();openModal('存档管理',`<p>每个行动步骤完成后自动保存。关掉浏览器后，可从标题页继续；导出文件可迁移到另一台电脑或浏览器。</p><p>${v.data?`${esc(stageById(v.data.state.stageId).label)} · 第 ${v.data.state.round} 回合 · ${esc(new Date(v.box.savedAt).toLocaleString())}${v.recovered?' · 已恢复备用存档':''}`:'暂无有效的经典双影存档'}</p><div class="complete-tabs"><button id="saveNow">立即保存</button><button id="exportSave">导出存档</button><button id="importSave">导入存档</button><button id="saveQuit">保存并返回标题</button></div><p>结算进行中保留上一个完整节点，当前步骤结束后自动更新。存储不可用时请导出文件。</p>`);$('#saveNow').onclick=()=>save(true);$('#exportSave').onclick=exportSave;$('#saveQuit').onclick=quit;$('#importSave').onclick=()=>$('#saveFile').click();}
   const nav=$('.title-menu'),cont=document.createElement('button');cont.id='titleContinue';cont.hidden=true;cont.onclick=()=>restore();nav.insertBefore(cont,nav.firstChild);
   const manage=document.createElement('button');manage.id='titleSaves';manage.textContent='存档管理';manage.onclick=openSaves;nav.append(manage);
   document.body.insertAdjacentHTML('beforeend','<div class="save-status" id="saveStatus" role="status"></div><div class="modal complete-modal" id="completeModal" aria-hidden="true"><section class="complete-card" role="dialog" aria-modal="true" aria-labelledby="completeTitle"><button class="close" id="completeClose" aria-label="关闭">×</button><small>夜冠 · 旅途记录</small><h2 id="completeTitle"></h2><div id="completeBody"></div></section></div><input id="saveFile" type="file" accept=".json,application/json" hidden>');
   $('#completeClose').onclick=closeModal;$('#completeModal').onclick=e=>{if(e.target.id==='completeModal')closeModal();const b=e.target.closest('[data-map-player]');if(b)openMap(Number(b.dataset.mapPlayer));};
   $('#saveFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{if(f.size>5000000)throw Error('存档文件过大');const raw=await f.text(),v=unpack(raw);if(/[<>]/.test(v.box.payload))throw Error('存档含有不支持的标记');if(state.resolving)throw Error('请等待当前步骤完成后再导入');if(await restore(raw))notice('存档已导入并恢复');}catch(error){notice(error.message,true);}};
   $('.top-actions').insertAdjacentHTML('afterbegin','<button id="classicMapBtn">地图</button><button id="saveMenuBtn">存档 / 返回</button>');$('#classicMapBtn').onclick=()=>openMap();$('#saveMenuBtn').onclick=openSaves;
-  document.addEventListener('keydown',e=>{if(window.NightRoam?.active)return;const m=$('#completeModal');if(m.classList.contains('open')){if(e.code==='Escape')closeModal();if(e.code==='Tab'){const bs=[...m.querySelectorAll('button')],i=bs.indexOf(document.activeElement);bs[(i+(e.shiftKey?-1:1)+bs.length)%bs.length]?.focus();e.preventDefault();}e.stopImmediatePropagation();return;}if(e.code==='Tab'&&!e.ctrlKey&&!e.altKey&&$('#titleScreen').classList.contains('closed')&&$('#setup').classList.contains('closed')&&!document.querySelector('.modal.open')){e.preventDefault();e.stopImmediatePropagation();openMap();}},true);
+  document.addEventListener('keydown',e=>{const m=$('#completeModal');if(m.classList.contains('open')){if(e.code==='Escape')closeModal();if(e.code==='Tab'){const bs=[...m.querySelectorAll('button')],i=bs.indexOf(document.activeElement);bs[(i+(e.shiftKey?-1:1)+bs.length)%bs.length]?.focus();e.preventDefault();}e.stopImmediatePropagation();return;}if(e.code==='Tab'&&!e.ctrlKey&&!e.altKey&&$('#titleScreen').classList.contains('closed')&&$('#setup').classList.contains('closed')&&!document.querySelector('.modal.open')){e.preventDefault();e.stopImmediatePropagation();openMap();}},true);
   window.addEventListener('pagehide',()=>{if(!state.headless&&stable())save();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!state.headless&&stable())save();});
   window.NightCrownProgress={onRender,save,restore,pack,unpack,read,refreshContinue,finish,openMap,mapData,quit,exportSave,keys:{primary:KEY,backup:BACKUP}};refreshContinue();
 })();

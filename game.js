@@ -1813,7 +1813,7 @@ const STORY = {
 /* ---------------------------------------------------------------------------
  * 统一行动结果与反馈数据结构
  * ---------------------------------------------------------------------------
- * 经典双影与夜行共用同一层：action -> outcome -> feedback。
+ * 单层驱动：action -> outcome -> feedback。
  * 这里定义一次行动产出的全部可呈现信息，渲染层只读这套结构，不再自己推算。
  * 关键点：影响预览由 estimateDelta() 用真实结算配置计算，UI 不硬编码预测值。
  */
@@ -8122,7 +8122,6 @@ $('#stSkip').addEventListener('click', finishStageTransition);
 
 function resetToSetup() {
   if (state.resolving) return;
-  if (window.NightRoam?.active) window.NightRoam.stop();
   musicEvent('title');
   const nextToken = state.token + 1;
   state = makeState(setupMode, setupBotCount);
@@ -8153,12 +8152,6 @@ async function enterGame() {
     if (audio.ctx?.state !== 'running') throw new Error('浏览器未能启动声音');
   } catch (error) {
     console.warn('声音暂时不可用，继续静音游戏：', error.message);
-  }
-  if (window.NightRoam?.selected) {
-    window.NightRoam.start(setupSelection[0], audio);
-    button.disabled = false;
-    button.innerHTML = '开始游戏 <span>→</span>';
-    return;
   }
   const nextGameToken = state.token + 1;
   state = makeState(setupMode, setupBotCount, setupRounds);
@@ -8910,7 +8903,6 @@ function layerPageCount(playerIndex, layer) {
 /* 事件路由：键位所属玩家 → 该玩家顶层界面 → 当前允许操作。
    每次事件最多触发一次；本侧层打开时拦截自己的底层行动，另一侧继续可操作。 */
 function handleKeydown(event) {
-  if (window.NightRoam?.active) return;
   const target = event.target;
   // 输入法 composition 期间、以及输入框里打字时不触发玩法键。
   if (event.isComposing || (target && (target.isContentEditable
@@ -9634,7 +9626,6 @@ function showTitle() {
   $('#setup').classList.add('closed');
   renderAudioStatus();
   window.NightCrownProgress?.refreshContinue();
-  window.NightRoam?.refreshContinue?.();
 }
 
 function showSetup() {

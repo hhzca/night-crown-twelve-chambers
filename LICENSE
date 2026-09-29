@@ -1,0 +1,41 @@
+MIT License
+
+Copyright (c) 2026 夜冠：十二室 (Night Crown: Twelve Rooms) contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+────────────────────────────────────────────────────────────────────────────────
+适用范围说明 / Scope
+────────────────────────────────────────────────────────────────────────────────
+
+本许可证覆盖本仓库中的所有**源代码**（HTML / CSS / JavaScript）与**文档**。
+
+音乐与音频素材由第三方依 CC0 / CC BY 3.0 授权，**不适用** MIT，
+其权利人、来源与授权条款见 `THIRD-PARTY-NOTICES.md` 与 `audio/SOURCES.md`，
+分发时请保留其中要求的署名信息。
+
+美术素材（角色立绘、NPC 头像、房间场景、地图）由本项目使用 AI 图像生成
+工具制作并经后期处理。若你希望以 MIT 之外的方式使用这些美术素材，
+请先通过仓库 Issue 取得联系。
+
+The MIT license above covers all source code (HTML/CSS/JavaScript) and
+documentation in this repository. Bundled music is licensed by third parties
+under CC0 / CC BY 3.0 and is NOT covered by MIT — see
+`THIRD-PARTY-NOTICES.md` for the required attribution notices.
+Artwork was produced with AI image generation tools and post-processed.

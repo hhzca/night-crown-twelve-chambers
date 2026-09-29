@@ -42,19 +42,6 @@
     <p class="action-hint" id="actionHint">选择一条去路</p>
   </main>
 
-  <main class="fr-shell" id="freeroamShell" aria-hidden="true">
-    <canvas id="freeroamCanvas" width="640" height="360" aria-label="夜行自由移动游戏画面"></canvas>
-    <section class="fr-hud" aria-live="polite">
-      <div class="fr-brand"><b>夜冠 · 夜行</b><span id="frRoom">主楼 · 黑冠大厅</span></div>
-      <div class="fr-clock"><small>天亮前</small><b id="frTick">Ⅰ · 十二</b><i id="frDanger"></i></div>
-      <div class="fr-perf" id="frFps">— fps</div>
-      <div class="fr-vitals" id="frVitals"></div>
-      <div class="fr-actions"><button id="frMapBtn">地图 / 日志 <kbd>Tab</kbd></button><button id="frPauseBtn">暂停 <kbd>Esc</kbd></button></div>
-    </section>
-    <div class="fr-prompt" id="frPrompt"></div><div class="fr-toast" id="frToast"></div>
-    <section class="fr-panel" id="frPanel" aria-hidden="true"></section>
-  </main>
-
   <section class="title-screen" id="titleScreen">
     <div class="title-sky" aria-hidden="true">
       <span class="title-moon"></span>
@@ -80,7 +67,7 @@
         <button id="titleSettings">设置</button>
         <button id="titleCredits">制作名单</button>
       </nav>
-      <p class="title-foot">本地双人 · 单人对战 · 夜行探索</p>
+      <p class="title-foot">本地双人 · 单人对战 · 同屏暗黑探索</p>
     </div>
   </section>
 
@@ -103,10 +90,6 @@
       </div>
       <div class="setup-controls">
         <div class="setup-nav"><button id="backToTitle" class="ghost">← 返回标题</button><button id="devToggle" class="ghost dev-toggle" aria-pressed="false" title="开发调试入口（Ctrl+Shift+D）">开发入口</button></div>
-        <div class="experience-switch" role="group" aria-label="选择玩法">
-          <button class="active" data-experience="classic">经典双影</button>
-          <button data-experience="freeroam">夜行 · 自由移动</button>
-        </div>
         <p class="experience-note" id="experienceNote">两道视野，同步选择，在八回合里争夺夜冠。</p>
         <div class="mode-switch" role="group" aria-label="游戏模式">
           <button class="active" data-mode="local">本地双人</button>
@@ -226,12 +209,16 @@
         <li><b>钟楼碎影</b>：<a href="https://opengameart.org/content/crystal-cave-mysterious-ambience-seamless-loop" target="_blank" rel="noopener">Crystal Cave + Mysterious Ambience</a>，<a href="https://pixelsphere.org/" target="_blank" rel="noopener">The Cynic Project / cynicmusic</a> 作曲，congusbongus 循环编排，<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>。保留两遍完整循环，调整循环起点、采样率、响度和边界去爆音。</li>
         <li><b>初次探索</b>：由本作代码实时合成的环境与节奏层，不使用外部音频文件。</li>
       </ul>
-      <h2>场景</h2>
-      <p class="credits-note">原始城堡沿用既有背景与角色立绘。新增十七张阶段独立场景、十四张重返城堡的变化场景，使用 OpenAI 图像生成工具制作。</p>
+      <h2>场景与立绘</h2>
+      <p class="credits-note">角色立绘、NPC 头像、房间与阶段场景、城堡地图及标题图层，均使用 OpenAI 图像生成工具制作，并经过调色、裁剪与合成等后期处理。新增十七张阶段独立场景、十四张重返城堡的变化场景。</p>
+      <h2>字体</h2>
+      <p class="credits-note">开场 CG 使用 Playfair Display（400 / 700），依 SIL Open Font License 1.1 授权。</p>
+      <h2>授权</h2>
+      <p class="credits-note">本作源代码（HTML / CSS / JavaScript）依 MIT 许可证发布；音乐素材由第三方依 CC0 与 CC BY 3.0 授权，不适用 MIT。仓库中的 LICENSE、THIRD-PARTY-NOTICES.md 与 audio/SOURCES.md 载有完整的授权与署名信息，分发时请一并保留。</p>
       <h2>运行方式</h2>
-      <p class="credits-note">直接用浏览器打开 best/index.html 即可，纯本地运行，不需要服务器、不需要联网。声音需要先点一下页面才会解锁，这是浏览器的要求。</p>
+      <p class="credits-note">直接用浏览器打开 index.html 即可，纯本地运行，不需要服务器、不需要联网。声音需要先点一下页面才会解锁，这是浏览器的要求。</p>
       <h2>旅途记录</h2>
-      <p class="credits-note">经典双影在安全节点自动存档，可在“存档 / 返回”中导出备份；夜行进度独立保存。标题页只在有有效存档时显示继续入口。</p>
+      <p class="credits-note">经典双影在安全节点自动存档，可在“存档 / 返回”中导出备份。标题页只在有有效存档时显示继续入口。</p>
     </section>
   </div>
 
@@ -305,13 +292,6 @@
 <script src="game.js"></script>
 <script src="world-rules.js"></script>
 <script src="stage-cinema.js"></script>
-  <script src="freeroam/fr-data.js"></script>
-  <script src="freeroam/fr-map.js"></script>
-  <script src="freeroam/fr-sprite.js"></script>
-  <script src="freeroam/fr-render.js"></script>
-  <script src="freeroam/fr-ai.js"></script>
-  <script src="freeroam/fr-steal.js"></script>
-  <script src="freeroam/fr-game.js"></script>
   <script src="complete.js"></script>
   <script src="opening-cg.js"></script>
 </body>
