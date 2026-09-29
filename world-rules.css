@@ -5,6 +5,18 @@
 .live-score .ls-sep{color:#7c6a44;margin:0 -8px}
 .live-score .ls-lead{color:#9be29b}
 .skill-reason{display:block;margin:4px 0 2px;color:#e7a57a;font-style:normal;font-size:12px}
+/* Esc 游戏中暂停菜单：把原本霸占顶栏的选项收进来，随时按 Esc 召唤。 */
+.modal.esc-menu{z-index:10030;background:#05060ae6;backdrop-filter:blur(10px)}
+.modal.esc-menu .esc-card{width:min(92vw,380px);padding:26px 26px 20px;border:1px solid #9e8756;border-radius:16px;background:linear-gradient(150deg,#171e2e,#191525);box-shadow:0 25px 110px #000;text-align:center}
+.modal.esc-menu small{color:#a89468;letter-spacing:.14em}
+.modal.esc-menu h2{margin:6px 0 8px;color:#f1e3c2;font-size:22px}
+.modal.esc-menu .esc-note{margin:0 0 16px;color:#9aa0b0;font-size:12.5px;line-height:1.6}
+.modal.esc-menu .esc-actions{display:grid;gap:9px}
+.modal.esc-menu .esc-actions button{width:100%;padding:12px 16px;border:1px solid #64738a;border-radius:9px;background:#222c40;color:#eee1c1;font-size:14px;cursor:pointer;transition:background .18s,border-color .18s}
+.modal.esc-menu .esc-actions button:hover,.modal.esc-menu .esc-actions button:focus{background:#36425b;border-color:#ddc589}
+.modal.esc-menu .esc-actions button.primary{border-color:#c9a35c;background:linear-gradient(#4a3c22,#332716);color:#ffe6a8;font-weight:700}
+.modal.esc-menu .esc-actions button[aria-pressed="true"]{border-color:#7bc997;color:#9be29b}
+.modal.esc-menu .esc-foot{margin:14px 0 0;color:#6f7688;font-size:11px}
 .world-choice{z-index:10020!important;background:#050812db;backdrop-filter:blur(8px)}
 .world-choice .complete-card{max-width:640px;width:min(92vw,640px);padding:30px;border:1px solid #9e8756;border-radius:16px;background:linear-gradient(140deg,#171e2e,#191525);box-shadow:0 25px 110px #000}
 .world-choice button{display:block;width:100%;margin:10px 0;padding:13px 18px;text-align:left;border:1px solid #64738a;color:#eee1c1;background:#222c40;border-radius:8px;cursor:pointer}

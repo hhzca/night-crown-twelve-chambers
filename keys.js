@@ -102,9 +102,9 @@ function controlTableRows() {
     ['上一页 / 下一页', [KEYMAP[0].prevPage, KEYMAP[0].nextPage], [KEYMAP[1].prevPage, KEYMAP[1].nextPage]],
     ['历史记录', [KEYMAP[0].history], [KEYMAP[1].history]],
     ['体系加成展开 / 收起', [KEYMAP[0].bonus], [KEYMAP[1].bonus]],
-    /* 【msg8 §21】主动技能面板与快捷治疗走「全局键」：不归任一侧独占，
-       由 handleKeydown 取当前可行动的人类玩家。 */
-    ['主动技能面板 开 / 合', ['R'], ['R']],
+    /* 【msg8 §21 / 反馈修复】主动技能面板与快捷治疗走「全局键」：不归任一侧独占，
+       由 handleKeydown 取当前可行动的人类玩家。技能键避开 R（玩家一第 4 选项）改用 X。 */
+    ['主动技能面板 开 / 合', ['X'], ['X']],
     ['快捷治疗（用最合理的治疗道具）', ['H'], ['H']]
   ].map(([action, left, right]) => ({
     action,

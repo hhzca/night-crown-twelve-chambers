@@ -235,6 +235,22 @@
     </section>
   </div>
 
+  <div class="modal esc-menu" id="escMenu" aria-hidden="true">
+    <section class="esc-card" role="dialog" aria-modal="true" aria-labelledby="escTitle">
+      <small>夜冠 · 暂停</small>
+      <h2 id="escTitle">城门暂时合上</h2>
+      <p class="esc-note">按 Esc 随时召唤这个面板；再按一次 Esc 或点下面的按钮关掉它，游戏继续。</p>
+      <nav class="esc-actions">
+        <button id="escResume" class="primary">继续游戏</button>
+        <button id="escHelp">规则 / 按键</button>
+        <button id="escSettings">声音与设置</button>
+        <button id="escMotion" aria-pressed="false">减少动态效果</button>
+        <button id="escRestart">重新开始</button>
+      </nav>
+      <p class="esc-foot">Esc 也可以关掉规则、设置和名单面板。</p>
+    </section>
+  </div>
+
   <div class="modal" id="settingsModal" aria-hidden="true">
     <section class="settings-card">
       <button class="close" id="closeSettings" aria-label="关闭">×</button>

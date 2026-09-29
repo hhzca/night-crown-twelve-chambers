@@ -183,7 +183,7 @@ const HEROES = [
     // 尺寸与脚底锚点按 alpha≥32 的真实边界推算，不按整幅 1254 画布贴边裁切。
     talent: {
       id: 'bellEcho', name: '铁钟回响',
-      summary: '按 R 释放：下回合所有强攻额外 +3 力量判定。',
+      summary: '按 X 释放：下回合所有强攻额外 +3 力量判定。',
       detail: '主动技能「铁钟回响」：释放后，你的下一回合里每一次以力量（强攻）进行的夺取或攻击，都额外获得 +3 力量判定。每局限一次。'
     },
     base: { health: 5, stamina: 5, sanity: 3, strength: 7, agility: 5, perception: 5, luck: 5, intimidation: 6, stealth: 4, keys: 0, clues: 0 }
@@ -192,7 +192,7 @@ const HEROES = [
     name: '莫斯', title: '蘑菇炼金师', className: 'hero-1', trait: '感知与神秘解读', kit: ['lantern', 'mirrorCharm'],
     talent: {
       id: 'sporeBlend', name: '孢子调和',
-      summary: '按 R 释放：立刻净化自身全部诅咒，并恢复 1 点理智。',
+      summary: '按 X 释放：立刻净化自身全部诅咒，并恢复 1 点理智。',
       detail: '主动技能「孢子调和」：释放后立刻中和你身上所有诅咒，并恢复 1 点理智。每个阶段限一次。'
     },
     base: { health: 4, stamina: 3, sanity: 4, strength: 4, agility: 5, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 }
@@ -201,7 +201,7 @@ const HEROES = [
     name: '诺克斯', title: '影子牧灯人', className: 'hero-2', trait: '敏捷与潜伏伏击', kit: ['lockpick', 'mistCloak'],
     talent: {
       id: 'lampfoot', name: '无灯脚步',
-      summary: '按 R 释放：本回合下一次夺取失手可再掷一次。',
+      summary: '按 X 释放：本回合下一次夺取失手可再掷一次。',
       detail: '主动技能「无灯脚步」：释放后，本回合你第一次夺取若失败，会自动再掷一次（隐藏豁免）。每三回合可用一次。'
     },
     base: { health: 3, stamina: 4, sanity: 5, strength: 4, agility: 7, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 }
@@ -210,13 +210,13 @@ const HEROES = [
 
 // 保留原版三人；七张新立绘各对应一个有独立规则的可玩角色。
 const NEW_HEROES = [
-  { name: '花棠', title: '白花信使', artSlug: '01-white-pink-flower', trait: '搜寻与留下线索', kit: ['chalk', 'tonic'], talent: { id: 'flowerTrace', name: '花径留痕', summary: '按 R 释放：标记一名对手，立即获得 1 条线索与 1 点感知。', detail: '主动技能「花径留痕」：释放后标记一名同房对手，立即获得 1 条线索，并永久 +1 感知。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 6, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 0 } },
-  { name: '双生', title: '相拥旅者', artSlug: '02-embracing-duo', trait: '互相守护与疗愈', kit: ['styptic', 'mirrorCharm'], talent: { id: 'embraceWard', name: '共担微光', summary: '按 R 释放：立刻恢复 1 点生命，并解除「受伤」「疲惫」。', detail: '主动技能「共担微光」：释放后立即恢复 1 点生命，并解除「受伤」「疲惫」状态。两人是同一可玩单位；每局限一次。' }, base: { health: 5, stamina: 3, sanity: 4, strength: 4, agility: 4, perception: 6, luck: 6, intimidation: 5, stealth: 5, keys: 0, clues: 0 } },
-  { name: '绯影', title: '蒙面潜行者', artSlug: '03-black-red-hood', trait: '暗处行动与脱身', kit: ['smokeVial', 'lockpick'], talent: { id: 'redVeil', name: '赤影换位', summary: '按 R 释放：本回合脱身 / 潜行更稳，抹去暴露并 +1 体力。', detail: '主动技能「赤影换位」：释放后本回合你的逃脱 / 潜行更稳，立刻抹去「暴露」并恢复 1 点体力。每三回合可用一次。' }, base: { health: 3, stamina: 5, sanity: 4, strength: 4, agility: 8, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 } },
-  { name: '蔷薇', title: '温室守护者', artSlug: '04-green-rose', trait: '疗愈与荆棘通路', kit: ['thornSeed', 'tonic'], talent: { id: 'roseBloom', name: '蔷薇再生', summary: '按 R 释放：立刻回满 3 点体力，并记下花园通路。', detail: '主动技能「蔷薇再生」：释放后立即恢复 3 点体力，并记下花园通路，之后可经常经花园捷径往返。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '赤冠号令', summary: '按 R 释放：标记一名对手，本回合对其夺取失手可再掷。', detail: '主动技能「赤冠号令」：释放后标记一名在场对手，本回合你对被标记者夺取失败会自动再掷一次。每局限一次。' }, base: { health: 5, stamina: 4, sanity: 4, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
-  { name: '彩墨', title: '斑斓画师', artSlug: '06-rainbow-painter', trait: '道具保养与发现', kit: ['paintVial', 'echoBell'], talent: { id: 'colorKeeper', name: '调色匣', summary: '按 R 释放：获得 1 条线索，并将目标一件道具上色使其暴露。', detail: '主动技能「调色匣」：释放后立刻获得 1 条线索；若指定一名同房对手，会将其一件道具上色，使该对手行踪暴露。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 4, strength: 4, agility: 6, perception: 7, luck: 7, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '眠羊织梦', summary: '按 R 释放：使一名对手「沉迷」，并暴露一条线索给你。', detail: '主动技能「眠羊织梦」：释放后使一名同房对手陷入「沉迷」——本回合其逃脱 / 潜行更难成立，并暴露一条线索给你。每局限一次。' }, base: { health: 4, stamina: 3, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
+  { name: '花棠', title: '白花信使', artSlug: '01-white-pink-flower', trait: '搜寻与留下线索', kit: ['chalk', 'tonic'], talent: { id: 'flowerTrace', name: '花径留痕', summary: '按 X 释放：标记一名对手，立即获得 1 条线索与 1 点感知。', detail: '主动技能「花径留痕」：释放后标记一名同房对手，立即获得 1 条线索，并永久 +1 感知。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 6, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 0 } },
+  { name: '双生', title: '相拥旅者', artSlug: '02-embracing-duo', trait: '互相守护与疗愈', kit: ['styptic', 'mirrorCharm'], talent: { id: 'embraceWard', name: '共担微光', summary: '按 X 释放：立刻恢复 1 点生命，并解除「受伤」「疲惫」。', detail: '主动技能「共担微光」：释放后立即恢复 1 点生命，并解除「受伤」「疲惫」状态。两人是同一可玩单位；每局限一次。' }, base: { health: 5, stamina: 3, sanity: 4, strength: 4, agility: 4, perception: 6, luck: 6, intimidation: 5, stealth: 5, keys: 0, clues: 0 } },
+  { name: '绯影', title: '蒙面潜行者', artSlug: '03-black-red-hood', trait: '暗处行动与脱身', kit: ['smokeVial', 'lockpick'], talent: { id: 'redVeil', name: '赤影换位', summary: '按 X 释放：本回合脱身 / 潜行更稳，抹去暴露并 +1 体力。', detail: '主动技能「赤影换位」：释放后本回合你的逃脱 / 潜行更稳，立刻抹去「暴露」并恢复 1 点体力。每三回合可用一次。' }, base: { health: 3, stamina: 5, sanity: 4, strength: 4, agility: 8, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 } },
+  { name: '蔷薇', title: '温室守护者', artSlug: '04-green-rose', trait: '疗愈与荆棘通路', kit: ['thornSeed', 'tonic'], talent: { id: 'roseBloom', name: '蔷薇再生', summary: '按 X 释放：立刻回满 3 点体力，并记下花园通路。', detail: '主动技能「蔷薇再生」：释放后立即恢复 3 点体力，并记下花园通路，之后可经常经花园捷径往返。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
+  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '赤冠号令', summary: '按 X 释放：标记一名对手，本回合对其夺取失手可再掷。', detail: '主动技能「赤冠号令」：释放后标记一名在场对手，本回合你对被标记者夺取失败会自动再掷一次。每局限一次。' }, base: { health: 5, stamina: 4, sanity: 4, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
+  { name: '彩墨', title: '斑斓画师', artSlug: '06-rainbow-painter', trait: '道具保养与发现', kit: ['paintVial', 'echoBell'], talent: { id: 'colorKeeper', name: '调色匣', summary: '按 X 释放：获得 1 条线索，并将目标一件道具上色使其暴露。', detail: '主动技能「调色匣」：释放后立刻获得 1 条线索；若指定一名同房对手，会将其一件道具上色，使该对手行踪暴露。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 4, strength: 4, agility: 6, perception: 7, luck: 7, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
+  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '眠羊织梦', summary: '按 X 释放：使一名对手「沉迷」，并暴露一条线索给你。', detail: '主动技能「眠羊织梦」：释放后使一名同房对手陷入「沉迷」——本回合其逃脱 / 潜行更难成立，并暴露一条线索给你。每局限一次。' }, base: { health: 4, stamina: 3, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
 ];
 HEROES.push(...NEW_HEROES);
 
@@ -1687,24 +1687,25 @@ const NPCS = {
 };
 
 const NPC_BY_ROOM = Object.fromEntries(Object.values(NPCS).map(npc => [npc.room, npc.id]));
+/* 【修复·NPC 刷新】NPC 是「房间」的属性，而不是「某个人」的属性：
+   同一回合里，只要这间房本来就有 NPC，任何走进来的人都能遇见同一个 NPC；
+   这间房本来没有 NPC，则谁来都遇不到。判定只看（回合 + 房间），与玩家无关，
+   因此不再出现「选路后按玩家各自概率随机弹 NPC」的抖动。
+   概率口径与原来一致：基础 37%。 */
+function roomHasNpcThisRound(roomId) {
+  if (!NPC_BY_ROOM[roomId]) return false;
+  const roomCode = [...roomId].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const roll = ((state.round * 37 + roomCode * 7) % 101) / 101;
+  return roll < .37;
+}
 function availableNpc(player) {
   const npcId = NPC_BY_ROOM[player.room];
   if (!npcId) return null;
-  const encounterKey = `${state.round}:${player.room}`;
-  if (player.npcEncounter?.key === encounterKey) return player.npcEncounter.id;
-  if (state.round === 1 && player.room === player.homeRoom) {
-    player.npcEncounter = { key: encounterKey, id: null };
-    return null;
-  }
-  const baseStats = ['strength', 'agility', 'perception', 'luck', 'intimidation', 'stealth'];
-  const weak = baseStats.reduce((sum, key) => sum + player.stats[key], 0) / baseStats.length < 5.5;
-  const sparse = player.inventory.filter(item => ITEMS[item.id]?.category === 'equipment').length < 2;
-  const darkRoom = ['secret', 'basement', 'dungeon'].includes(player.room);
-  const chance = .37 + (weak && sparse && darkRoom ? .20 : 0);
-  const roomCode = [...player.room].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const roll = ((state.round * 37 + player.index * 19 + roomCode * 7) % 101) / 101;
-  player.npcEncounter = { key: encounterKey, id: roll < chance ? npcId : null };
-  return player.npcEncounter.id;
+  // 自己的初始房间首回合不刷 NPC（保留原有开场保护）。
+  if (state.round === 1 && player.room === player.homeRoom) return null;
+  // 房间本回合没有 NPC：任何人来都没有。
+  if (!roomHasNpcThisRound(player.room)) return null;
+  return npcId;
 }
 const NPC_ART = {
   healer: 'npc-healer', archivist: 'npc-archivist', cook: 'npc-cook',
@@ -2803,7 +2804,7 @@ function renderInventory(player) {
     <span class="bag-key-line"><b>金钱/关键</b> <i>钥匙 ${player.stats.keys || 0}</i><i>线索 ${player.stats.clues || 0}</i> · ${compactCounts.relic}件</span>
     <button data-bag-open="${player.index}">完整行囊 <kbd>${keyLabel(keyRowOf(player.index).bag)}</kbd></button>
     <button data-quick-heal="${player.index}" ${bestHealItem(player) ? '' : 'disabled title="没有可用的治疗道具"'} class="quick-heal-btn" style="border-color:#7bc997;color:#7bc997">快捷治疗 <kbd>H</kbd></button>
-    ${(() => { const a = activeAvailability(player); const act = heroActiveOf(player); if (!act) return ''; const panel = player.turn?.activePanel; if (panel) { const tgts = act.needsTarget ? activeTargetsFor(player).map(t => `<button data-skill-target="${t.id}" data-player-index="${player.index}" class="skill-target ${panel.targetId === t.id ? 'on' : ''}">${t.label}${panel.targetId === t.id ? ' ✓' : ''}</button>`).join('') : ''; return `<span class="skill-panel"><b>${act.name}</b><small>${act.desc}</small>${panel.reason ? `<i class="skill-reason">暂不可用：${panel.reason}</i>` : ''}${tgts}<button data-skill-confirm="${player.index}" ${(!panel.reason && (!act.needsTarget || panel.targetId)) ? '' : 'disabled'} >确认释放</button><button data-skill-cancel="${player.index}">取消</button></span>`; } return `<button data-skill-open="${player.index}" ${a.ok ? '' : `disabled title="${a.reason}"`} class="active-skill-btn" style="border-color:#d9b458;color:#d9b458">${act.name}</button>`; })()}
+    ${(() => { const a = activeAvailability(player); const act = heroActiveOf(player); if (!act) return ''; const panel = player.turn?.activePanel; if (panel) { const tgts = act.needsTarget ? activeTargetsFor(player).map(t => `<button data-skill-target="${t.id}" data-player-index="${player.index}" class="skill-target ${panel.targetId === t.id ? 'on' : ''}">${t.label}${panel.targetId === t.id ? ' ✓' : ''}</button>`).join('') : ''; return `<span class="skill-panel"><b>${act.name}</b><small>${act.desc}</small>${panel.reason ? `<i class="skill-reason">暂不可用：${panel.reason}</i>` : ''}${tgts}<button data-skill-confirm="${player.index}" ${(!panel.reason && (!act.needsTarget || panel.targetId)) ? '' : 'disabled'} >确认释放</button><button data-skill-cancel="${player.index}">取消</button></span>`; } return `<button data-skill-open="${player.index}" class="active-skill-btn ${a.ok ? '' : 'is-blocked'}" title="${a.ok ? '打开技能面板（键：X）' : `暂不可用：${a.reason}`}" style="border-color:#d9b458;color:#d9b458">${act.name}${a.ok ? '' : ` · ${a.reason}`}</button>`; })()}
   </div>`;
   const bonusHost = $(`#systemBonuses-${player.index}`);
   if (bonusHost) {
@@ -8682,12 +8683,11 @@ function handleKeydown(event) {
     return;
   }
 
-  /* 【msg8 §4 / §21】主动技能面板：选择阶段按 R 开 / 合。
-     说明：§21 早期草案写「F 开技能栏、1–6 选技能」，但 F 已是本侧「确认」键、
-     1–4 已是本侧「主动道具」热键（keys.js 双人键位表），直接照抄会撞键。
-     现方案取自该节「沿用现有字母绑定」的约束：R 常驻开合技能面板，
-     每人只有一个主动，面板内直接用鼠标/确认键释放，无需 1–6 选技能。 */
-  if (event.code === 'KeyR' && isSelectPhase()) {
+  /* 【msg8 §4 / §21 / 反馈修复】主动技能面板：选择阶段按 X 开 / 合。
+     早期草案写 R，但 R 已是玩家一第 4 个选项键（keys.js: choices[3]='KeyR'），
+     两者撞键——按 R 时先被技能分支吃掉，玩家一就永远选不了第 4 条路。
+     现改用两侧键位表都不占用的 X（全局键，作用于当前可行动的人类玩家）。 */
+  if (event.code === 'KeyX' && isSelectPhase()) {
     const pidx = state.players.findIndex(p => p.control === 'human' && !playerCannotAct(p) && isSelectPhase());
     if (pidx >= 0) {
       event.preventDefault();
@@ -8707,14 +8707,20 @@ function handleKeydown(event) {
     return;
   }
 
-  // Esc 只关全局帮助 / 设置，不猜测属于哪个玩家；本侧关闭始终是 G / H。
+  // Esc：先关掉任何打开的面板（规则 / 设置 / 名单 / 暂停菜单）；
+  // 若一个都没开，就在游戏中召唤暂停菜单。不猜测属于哪个玩家；本侧关闭始终是 G / H。
   if (event.code === 'Escape') {
-    $('#helpModal').classList.remove('open');
-    $('#helpModal').setAttribute('aria-hidden', 'true');
-    $('#settingsModal').classList.remove('open');
-    $('#settingsModal').setAttribute('aria-hidden', 'true');
-    $('#creditsModal').classList.remove('open');
-    $('#creditsModal').setAttribute('aria-hidden', 'true');
+    event.preventDefault();
+    const anyOpen = ['#helpModal', '#settingsModal', '#creditsModal', '#escMenu']
+      .some(sel => $(sel)?.classList.contains('open'));
+    if (anyOpen) {
+      for (const sel of ['#helpModal', '#settingsModal', '#creditsModal', '#escMenu']) {
+        const el = $(sel);
+        if (el) { el.classList.remove('open'); el.setAttribute('aria-hidden', 'true'); }
+      }
+    } else {
+      openEscMenu();
+    }
     return;
   }
 
@@ -9303,6 +9309,31 @@ function closeSettings() {
   $('#settingsModal').setAttribute('aria-hidden', 'true');
 }
 
+/* 【反馈修复】Esc 游戏中暂停菜单：把「规则 / 设置 / 减少动态 / 重开」从顶栏收进这里。
+   任何玩法阶段（setup / 选人 / 行动 / 结果 / 转场）按 Esc 都能召唤；再按一次关闭。 */
+function openEscMenu() {
+  const menu = $('#escMenu');
+  if (!menu) return false;
+  $('#helpModal').classList.remove('open');
+  $('#settingsModal').classList.remove('open');
+  $('#creditsModal').classList.remove('open');
+  const motion = $('#escMotion');
+  if (motion) { motion.setAttribute('aria-pressed', reducedMotion ? 'true' : 'false'); motion.classList.toggle('active', reducedMotion); }
+  menu.classList.add('open');
+  menu.setAttribute('aria-hidden', 'false');
+  return true;
+}
+function closeEscMenu() {
+  const menu = $('#escMenu');
+  if (!menu) return false;
+  menu.classList.remove('open');
+  menu.setAttribute('aria-hidden', 'true');
+  return true;
+}
+function escMenuOpen() {
+  return Boolean($('#escMenu')?.classList.contains('open'));
+}
+
 $('#growthBody').addEventListener('click', event => {
   const button = event.target.closest('[data-growth]');
   if (!button) return;
@@ -9433,6 +9464,27 @@ $('#closeHelp').addEventListener('click', () => {
 });
 $('#restartBtn').addEventListener('click', resetToSetup);
 $('#endRestart').addEventListener('click', resetToSetup);
+
+/* Esc 暂停菜单里的按钮：继续 / 规则 / 设置 / 减少动态 / 重开。 */
+$('#escResume')?.addEventListener('click', closeEscMenu);
+$('#escMenu')?.addEventListener('click', event => { if (event.target.id === 'escMenu') closeEscMenu(); });
+$('#escHelp')?.addEventListener('click', () => {
+  closeEscMenu();
+  renderControlTable();
+  $('#helpModal').classList.add('open');
+  $('#helpModal').setAttribute('aria-hidden', 'false');
+});
+$('#escSettings')?.addEventListener('click', () => { closeEscMenu(); openSettings(); });
+$('#escMotion')?.addEventListener('click', event => {
+  const reduced = document.body.classList.toggle('reduce-motion');
+  reducedMotion = reduced;
+  event.currentTarget.setAttribute('aria-pressed', reduced ? 'true' : 'false');
+  event.currentTarget.classList.toggle('active', reduced);
+  const top = $('#motionBtn');
+  if (top) { top.setAttribute('aria-pressed', reduced ? 'true' : 'false'); top.classList.toggle('active', reduced); }
+  try { localStorage.setItem('nightcrown.reduceMotion', reduced ? '1' : '0'); } catch (error) { /* 本地存储不可用时忽略 */ }
+});
+$('#escRestart')?.addEventListener('click', () => { closeEscMenu(); resetToSetup(); });
 document.addEventListener('keydown', handleKeydown);
 
 /* ---------------------------------------------------------------------------
@@ -9505,6 +9557,16 @@ window.__nightCrownTest = {
   skipDialogue,
   chooseDialogueTopic,
   npcTopicChoices(index) { return npcTopicChoices(state.players[index], NPC_BY_ROOM[state.players[index].room]); },
+  availableNpc(index) { return availableNpc(state.players[index]); },
+  roomHasNpcThisRound(roomId) { return roomHasNpcThisRound(roomId); },
+  /* 主动技能面板（键 X / 点击按钮）验收入口。 */
+  heroActiveOf(index) { return heroActiveOf(state.players[index]); },
+  activeAvailability(index) { return activeAvailability(state.players[index]); },
+  activePanelOf(index) { return state.players[index]?.turn?.activePanel || null; },
+  openActivePanel, closeActivePanel, confirmActiveSkill, selectActiveTarget,
+  escMenuOpen: typeof escMenuOpen === 'function' ? escMenuOpen : null,
+  openEscMenu: typeof openEscMenu === 'function' ? openEscMenu : null,
+  closeEscMenu: typeof closeEscMenu === 'function' ? closeEscMenu : null,
   useItemForTest(playerIndex, uid) {
     const item = uid ? itemByUid(state.players[playerIndex], uid) : state.players[playerIndex].inventory[0] || null;
     if (!item) return null;
