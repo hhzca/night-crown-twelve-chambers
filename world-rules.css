@@ -1,4 +1,10 @@
 .world-hud{padding:8px 0;color:#e3c989;font-size:12px;letter-spacing:.08em}
+.live-score{display:flex;gap:16px;align-items:center;color:#f3e4bd;font-size:13px;letter-spacing:.04em;margin-left:18px;padding-left:18px;border-left:1px solid #4a3f2a;white-space:nowrap}
+.live-score .ls-name{color:#cdbd95}
+.live-score b{color:#ffd86b;font-size:16px;margin-left:2px}
+.live-score .ls-sep{color:#7c6a44;margin:0 -8px}
+.live-score .ls-lead{color:#9be29b}
+.skill-reason{display:block;margin:4px 0 2px;color:#e7a57a;font-style:normal;font-size:12px}
 .world-choice{z-index:10020!important;background:#050812db;backdrop-filter:blur(8px)}
 .world-choice .complete-card{max-width:640px;width:min(92vw,640px);padding:30px;border:1px solid #9e8756;border-radius:16px;background:linear-gradient(140deg,#171e2e,#191525);box-shadow:0 25px 110px #000}
 .world-choice button{display:block;width:100%;margin:10px 0;padding:13px 18px;text-align:left;border:1px solid #64738a;color:#eee1c1;background:#222c40;border-radius:8px;cursor:pointer}

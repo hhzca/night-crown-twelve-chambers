@@ -4,7 +4,7 @@
   'use strict';
   const timeRooms = ['traceGate','goldVault','ruinConvergence','mirrorSanctum','collapseClock'];
   const previousMakeState=makeState;
-  makeState=function(...args){const s=previousMakeState(...args);s.rulesVersion=2;s.bellRingerIds=[];for(const p of s.players){p.gold=0;p.charms=Number(p.charms)||0;}return s;};
+  makeState=function(...args){const s=previousMakeState(...args);s.rulesVersion=2;s.bellRingerIds=[];for(const p of s.players){p.gold=0;p.chips=0;p.charms=Number(p.charms)||0;}return s;};
   const active = p => !p.collapsed && p.stats.health > 0 && p.stats.sanity > 0;
   const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const originalNpcRooms=Object.fromEntries(Object.values(NPCS).map(n=>[n.id,n.room]));
@@ -18,7 +18,7 @@
       const clocks=state.players.filter(p=>!p.collapsed&&p.room==='collapseClock').map(p=>p.id);
       if(clocks.length&&!state.pendingEntryEvent){state.clockEntrants=clocks;const token=state.token;queueMicrotask(()=>{if(state.token===token)checkEntries({phase:slot?'select':'result',slot:slot||slotOfPhase(state.phase,'result')||1});});}
     }
-    for(const p of state.players){p.gold=Number(p.gold)||0;p.charms=Number(p.charms)||0;}
+    for(const p of state.players){p.gold=Number(p.gold)||0;p.chips=Number(p.chips)||0;p.charms=Number(p.charms)||0;}
     for(const key of Object.keys(NPC_BY_ROOM))delete NPC_BY_ROOM[key];
     for(const [id,original]of Object.entries(originalNpcRooms)){const room=state.npcRooms?.[id]||original;if(roomIsAlive(room)&&!NPC_BY_ROOM[room])NPC_BY_ROOM[room]=id;}
   }
@@ -79,10 +79,10 @@
     if(p.havenWait>0) return {id:'haven-wait',kind:'roomMechanism',mechanism:'haven',text:'锁链禁锢 · 等待一次行动',flavor:'锁链松开后立即离开避难所',stat:'sanity',risk:0,tags:[]};
     if(id==='bloodThrone' && !state.crownHolder && !state.crownLost) return {id:'crown-equip',kind:'roomMechanism',mechanism:'crown',text:'戴上血染王冠',flavor:'夺取成功率 +20 个百分点；成功夺取将淘汰对手',stat:'intimidation',risk:0,tags:[]};
     if(id==='bellTower' && !p.rangBell) return {id:'bell-ring',kind:'roomMechanism',mechanism:'bell',text:'敲响钟楼',flavor:'每人一局一次；最终敲钟人数奇数 ×1.25，偶数 ×0.8',stat:'luck',risk:1,tags:[]};
-    if(state.stageId!=='shard' || !timeRooms.slice(0,4).includes(id) || p.roomMechanismUsed) return null;
+    if(state.stageId!=='shard' || !timeRooms.slice(0,4).includes(id) || id==='ruinConvergence' || p.roomMechanismUsed) return null;
     if(charm && !(p.charms>0)) return null;
-    const labels={traceGate:['循迹 · 选择追踪的人','选择两条光轨之一，前往该角色当前的房间'],goldVault:['收取流金 · 30 金币','获得金币后立即离开密室'],ruinConvergence:['唤起毁灭汇点','本次行动全部结算后，把所有在场角色召到这里'],mirrorSanctum:['映照自身 · 选择属性','选择一项永久基础属性，补至当前最高值']};
-    const bonuses={traceGate:'传送后生命、理智各恢复 2',goldVault:'改为获得 60 金币，然后离开',ruinConvergence:'召集所有在场角色，并获得一次蜡像防护',mirrorSanctum:'所选属性补齐后再永久 +2'};
+    const labels={traceGate:['循迹 · 选择追踪的人','选择两条光轨之一，前往该角色当前的房间'],goldVault:['收取流金 · 30 筹码','获得筹码后立即离开密室'],ruinConvergence:['唤起毁灭汇点','本次行动全部结算后，把所有在场角色召到这里'],mirrorSanctum:['映照自身 · 选择属性','选择一项永久基础属性，补至当前最高值']};
+    const bonuses={traceGate:'传送后生命、理智各恢复 2',goldVault:'改为获得 60 筹码，然后离开',ruinConvergence:'召集所有在场角色，并获得一次蜡像防护',mirrorSanctum:'所选属性补齐后再永久 +2'};
     return {id:`room-${id}-${charm?'charm':'normal'}-${p.roomVisit||0}`,kind:'roomMechanism',mechanism:id,charm,text:charm?'使用时间护符 · '+labels[id][0]:labels[id][0],flavor:charm?'消耗 1 枚护符、1 次行动；'+bonuses[id]:labels[id][1],stat:'perception',risk:0,tags:[],needsChoice:['traceGate','mirrorSanctum'].includes(id)};
   }
   function details(p, entry) {
@@ -109,7 +109,16 @@
     }
     const specials=main?[main,...(charm && charm.charm?[charm]:[])]:[];
     for(const e of specials) if(e.needsChoice && !details(p,e).length) {e.disabled=true;e.flavor=e.mechanism==='traceGate'?'当前没有可追踪的光轨':'所有基础属性已齐平';}
-    p.options=[...specials,...normal].slice(0,Math.max(OPTION_MAX,specials.length+3));
+    /* 【修复·毁灭汇点】召唤改为显式「召集所有人」行动触发，不再进房自动召集。
+       该原生行动此前被 timeRooms 过滤掉，这里补回为召唤机制选项。 */
+    if(p.room==='ruinConvergence'){
+      const gather=ROOM_ACTIONS.ruinConvergence.find(e=>e.text==='召集所有人');
+      if(gather && !specials.some(s=>s.text===gather.text)) specials.push({id:`ruin-gather-${p.roomVisit||0}`,kind:'roomMechanism',mechanism:'ruin-gather',text:gather.text,flavor:(gather.flavor||'')+'（消耗一次行动，把仍在场的角色召集到毁灭汇点）',risk:gather.risk,stat:gather.stat,tags:[...gather.tags],needsChoice:false});
+    }
+    /* 【修复】焚罪地狱必须完整展示 6 个考验（含必败陷阱），不吃 OPTION_MAX 截断；
+       此前 slice(0,4) + 跨格去重导致第三格只剩 2 个选项。 */
+    const cap=p.room==='hellOfSin'?Math.max(OPTION_MAX,normal.length+specials.length):Math.max(OPTION_MAX,specials.length+3);
+    p.options=[...specials,...normal].slice(0,cap);
     p.turn.slots[slot].options=p.options;
     return p.options;
   };
@@ -145,10 +154,10 @@
       case 'haven': {p.havenWait=0;relocate(p,pick(exits(['lastHaven','collapseClock'])),'haven-release');note('锁链吃掉了这次行动，随后把你送出避难所。');break;}
       case 'crown': if(!state.crownHolder && !state.crownLost){giveCrownTo(p);note('血染王冠落在你的额上。');}else note('王冠已经被别人取走。');break;
       case 'bell': if(!p.rangBell){p.rangBell=true;state.bellRingerIds=[...new Set([...(state.bellRingerIds||[]),p.id])];note(`本局已有 ${state.bellRingerIds.length} 位敲钟者。`);}break;
-      case 'goldVault': {const amount=e.charm?60:30;p.gold=(p.gold||0)+amount;p.roomMechanismUsed=true;relocate(p,pick(exits(['goldVault','collapseClock'])),'gold');note(`获得 ${amount} 金币；流金把你送到${ROOM_BY_ID[p.room].name}。`);break;}
+      case 'goldVault': {const amount=e.charm?60:30;p.chips=(p.chips||0)+amount;p.roomMechanismUsed=true;relocate(p,pick(exits(['goldVault','collapseClock'])),'gold');note(`获得 ${amount} 筹码；流金把你送到${ROOM_BY_ID[p.room].name}。`);break;}
       case 'mirrorSanctum': {if(!CORE_STAT_KEYS.includes(e.selectedStat))break;const max=Math.max(...CORE_STAT_KEYS.map(k=>p.stats[k]));raiseStatTo(p,e.selectedStat,max+(e.charm?2:0),result);p.roomMechanismUsed=true;note(`${STAT_LABEL[e.selectedStat]}永久提升至 ${p.stats[e.selectedStat]}。`);break;}
       case 'traceGate': {const target=state.players.find(o=>o.id===e.targetPlayerId && active(o) && roomIsAlive(o.room) && o.room!=='collapseClock');if(!target){if(e.charm)p.charms++;p.refundRoomAction=true;p.traceTargets=null;note('光轨中断：本次行动返还，请重新选择。');break;}relocate(p,target.room,'trace');if(e.charm)for(const k of ['health','sanity'])raiseStatTo(p,k,Math.min(10,p.stats[k]+2),result);note(`你沿着${target.label}的光轨抵达${ROOM_BY_ID[p.room].name}。`);break;}
-      case 'ruinConvergence': state.pendingSummon=true;p.roomMechanismUsed=true;if(e.charm)p.wardCharges=(p.wardCharges||0)+1;note('所有已锁定的行动结算后，毁灭汇点将召集仍在场的人。');break;
+      case 'ruin-gather': state.pendingSummon=true;p.roomMechanismUsed=true;if(e.charm)p.wardCharges=(p.wardCharges||0)+1;note('所有已锁定的行动结算后，毁灭汇点将召集仍在场的人。');break;
     }
   }
   function afterBatch(){
@@ -210,7 +219,7 @@
   };
   bellMultiplierFor=function(p){state.bellRingerIds=[...new Set([...(state.bellRingerIds||[]),...state.players.filter(p=>p.rangBell).map(p=>p.id)])];return state.bellRingerIds.includes(p.id)?(state.bellRingerIds.length%2?1.25:.8):1;};
   const oldBreakdown=scoreBreakdown;
-  scoreBreakdown=function(p){return {...oldBreakdown(p),gold:Math.min(12,Math.max(0,p.gold||0)*.2)};};
+  scoreBreakdown=function(p){return {...oldBreakdown(p),gold:Math.min(12,Math.max(0,p.chips||0)*.2)};};
   const rawScore=p=>Object.values(scoreBreakdown(p)).reduce((a,b)=>a+b,0);
   scorePlayer=function(p){if(p.scoreSnapshot!=null)return Math.round(p.scoreSnapshot*bellMultiplierFor(p)*(p.eliminatedByCrown?.85:1)*10)/10;if(!active(p))return -1;return Math.round(rawScore(p)*bellMultiplierFor(p)*10)/10;};
   eliminateByCrown=function(p){if(p.eliminatedByCrown)return;p.scoreSnapshot=rawScore(p);p.eliminatedByCrown=true;p.collapsed=true;p.eliminatedReason='被血染王冠淘汰';state.eliminatedIds=[...new Set([...(state.eliminatedIds||[]),p.id])];};
@@ -220,7 +229,9 @@
   seizeResource=function(a,b,ar,br){const holder=state.crownHolder;const v=oldSeize(a,b,ar,br);if(holder===b.id && holder!==a.id){giveCrownTo(a);ar.consequences.push('你夺走了血染王冠。');}return v;};
   const oldRender=renderAll;
   renderAll=function(){migrate();oldRender();if(state.headless)return;
-    for(const p of state.players.filter(p=>p.control==='human')){const host=$(`#decision-${p.index}`);if(!host)continue;let hud=host.querySelector('.world-hud');if(!hud){hud=document.createElement('div');hud.className='world-hud';host.prepend(hud);}hud.textContent=`金币 ${p.gold||0} · 时间护符 ${p.charms||0}${state.crownHolder===p.id?' · 血染王冠':''}${p.collapsed?' · 已退场，正在观战':''}`;}
+    for(const p of state.players.filter(p=>p.control==='human')){const host=$(`#decision-${p.index}`);if(!host)continue;let hud=host.querySelector('.world-hud');if(!hud){hud=document.createElement('div');hud.className='world-hud';host.prepend(hud);}hud.textContent=`筹码 ${p.chips||0} · 时间护符 ${p.charms||0}${state.crownHolder===p.id?' · 血染王冠':''}${p.collapsed?' · 已退场，正在观战':''}`;}
+    const ls=document.getElementById('liveScore');
+    if(ls){const humans=state.players.filter(p=>p.control==='human');const parts=humans.map(p=>{const s=scorePlayer(p);return `<span class="ls-name">玩家${p.index+1}</span><b>${s.toFixed(1)}</b>`;});ls.innerHTML=parts.join('<span class="ls-sep">·</span>');}
     if(state.phase==='entry_event'&&state.pendingEntryEvent){const e=state.pendingEntryEvent;closeChoice();const p=state.players.find(p=>e.holders.includes(p.id)&&!(p.id in e.responses));if(!p)return;const node=document.createElement('div');node.id='worldChoice';node.className='modal open world-choice';node.innerHTML=`<section class="complete-card" role="dialog" aria-modal="true"><small>崩溃时钟 · ${esc(p.label)}</small><h2>钟盘正在坍塌</h2><p>使用时间护符修补钟楼，立即获得特殊胜利；放任崩溃将摧毁最多八间房。</p><button data-answer="yes">使用护符修补 · 立即胜利</button><button data-answer="no">放任崩溃 · 保留护符</button></section>`;node.querySelectorAll('button').forEach(b=>b.onclick=()=>answer(p.id,b.dataset.answer==='yes'));document.body.append(node);}
     else if(!slotOfPhase(state.phase,'select'))closeChoice();
     else if(!document.getElementById('worldChoice')){const p=state.players.find(p=>p.control==='human'&&!p.collapsed&&p.turn.roomChoice&&!isPlayerReady(p));if(p){const selection=p.turn.roomChoice,e=legalEntries(p)[selection.index];if(e?.id===selection.entryId)showChoice(p,e,selection.index,'human');else p.turn.roomChoice=null;}}

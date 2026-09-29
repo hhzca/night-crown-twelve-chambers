@@ -183,8 +183,8 @@ const HEROES = [
     // 尺寸与脚底锚点按 alpha≥32 的真实边界推算，不按整幅 1254 画布贴边裁切。
     talent: {
       id: 'bellEcho', name: '铁钟回响',
-      summary: '硬碰硬失手的时候，钟声会替你卸掉最重的那一下。',
-      detail: '以力气或气势正面硬上却彻底失手时，钟声会把最狠的那一半反噬挡掉，让事情只停在“没成”；一整夜里只响一次。'
+      summary: '按 R 释放：下回合所有强攻额外 +3 力量判定。',
+      detail: '主动技能「铁钟回响」：释放后，你的下一回合里每一次以力量（强攻）进行的夺取或攻击，都额外获得 +3 力量判定。每局限一次。'
     },
     base: { health: 5, stamina: 5, sanity: 3, strength: 7, agility: 5, perception: 5, luck: 5, intimidation: 6, stealth: 4, keys: 0, clues: 0 }
   },
@@ -192,8 +192,8 @@ const HEROES = [
     name: '莫斯', title: '蘑菇炼金师', className: 'hero-1', trait: '感知与神秘解读', kit: ['lantern', 'mirrorCharm'],
     talent: {
       id: 'sporeBlend', name: '孢子调和',
-      summary: '用过的东西常常还能再用一次；净化时能多洗掉一层附着的阴影。',
-      detail: '每次动用行囊里的东西，它都有机会一点不磨损；净化时会额外多摘掉一个负面状态或诅咒。'
+      summary: '按 R 释放：立刻净化自身全部诅咒，并恢复 1 点理智。',
+      detail: '主动技能「孢子调和」：释放后立刻中和你身上所有诅咒，并恢复 1 点理智。每个阶段限一次。'
     },
     base: { health: 4, stamina: 3, sanity: 4, strength: 4, agility: 5, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 }
   },
@@ -201,8 +201,8 @@ const HEROES = [
     name: '诺克斯', title: '影子牧灯人', className: 'hero-2', trait: '敏捷与潜伏伏击', kit: ['lockpick', 'mistCloak'],
     talent: {
       id: 'lampfoot', name: '无灯脚步',
-      summary: '藏在暗处、靠身手完成的事情更稳；没有人看着你时，下手格外顺。',
-      detail: '凡是靠藏匿或身手去做的行动都更稳当；当这间房里没有第二双眼睛盯着你时，夺取会明显更容易得手。'
+      summary: '按 R 释放：本回合下一次夺取失手可再掷一次。',
+      detail: '主动技能「无灯脚步」：释放后，本回合你第一次夺取若失败，会自动再掷一次（隐藏豁免）。每三回合可用一次。'
     },
     base: { health: 3, stamina: 4, sanity: 5, strength: 4, agility: 7, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 }
   }
@@ -210,13 +210,13 @@ const HEROES = [
 
 // 保留原版三人；七张新立绘各对应一个有独立规则的可玩角色。
 const NEW_HEROES = [
-  { name: '花棠', title: '白花信使', artSlug: '01-white-pink-flower', trait: '搜寻与留下线索', kit: ['chalk', 'tonic'], talent: { id: 'flowerTrace', name: '花径留痕', summary: '每回合首次成功搜寻会额外找到一条线索。', detail: '每回合第一次成功的搜寻行动额外获得一条线索。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 6, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 0 } },
-  { name: '双生', title: '相拥旅者', artSlug: '02-embracing-duo', trait: '互相守护与疗愈', kit: ['styptic', 'mirrorCharm'], talent: { id: 'embraceWard', name: '共担微光', summary: '每回合首次受到伤害时保住一口气。', detail: '每回合首次在普通行动中受伤时，立即恢复一点生命并消除疲惫。两人是同一可玩单位。' }, base: { health: 5, stamina: 3, sanity: 4, strength: 4, agility: 4, perception: 6, luck: 6, intimidation: 5, stealth: 5, keys: 0, clues: 0 } },
-  { name: '绯影', title: '蒙面潜行者', artSlug: '03-black-red-hood', trait: '暗处行动与脱身', kit: ['smokeVial', 'lockpick'], talent: { id: 'redVeil', name: '赤影换位', summary: '潜行行动更稳，失败时也能掩去踪迹。', detail: '隐藏与敏捷行动获得稳定加成；每回合首次潜行失败移除暴露并恢复一点体力。' }, base: { health: 3, stamina: 5, sanity: 4, strength: 4, agility: 8, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 } },
-  { name: '蔷薇', title: '温室守护者', artSlug: '04-green-rose', trait: '疗愈与荆棘通路', kit: ['thornSeed', 'tonic'], talent: { id: 'roseBloom', name: '蔷薇再生', summary: '每回合首次恢复行动会再补一点体力。', detail: '每回合第一次进行恢复或净化行动，额外恢复一点体力，并记下花园通路。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '赤冠号令', summary: '威慑更稳；每回合首次成功威慑后标记一名对手。', detail: '威慑行动获得稳定加成；每回合第一次成功威慑后标记一名在场对手——被标记者下回合行动风险提高，你对其夺取 / 攻击获得加成。' }, base: { health: 5, stamina: 4, sanity: 4, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
-  { name: '彩墨', title: '斑斓画师', artSlug: '06-rainbow-painter', trait: '道具保养与发现', kit: ['paintVial', 'echoBell'], talent: { id: 'colorKeeper', name: '调色匣', summary: '每回合首次动用道具不磨损。', detail: '每回合首次真正消耗道具时保留它的耐久；若用画具，额外发现一条线索。' }, base: { health: 4, stamina: 4, sanity: 4, strength: 4, agility: 6, perception: 7, luck: 7, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
-  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '眠羊织梦', summary: '神秘行动更稳；每回合首次成功神秘后使一名对手陷入沉迷。', detail: '神秘与理智行动获得稳定加成；每回合第一次成功的神秘行动使一名对手陷入「沉迷」——其下回合敏捷与感知临时下降，并暴露一条线索给你。' }, base: { health: 4, stamina: 3, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
+  { name: '花棠', title: '白花信使', artSlug: '01-white-pink-flower', trait: '搜寻与留下线索', kit: ['chalk', 'tonic'], talent: { id: 'flowerTrace', name: '花径留痕', summary: '按 R 释放：标记一名对手，立即获得 1 条线索与 1 点感知。', detail: '主动技能「花径留痕」：释放后标记一名同房对手，立即获得 1 条线索，并永久 +1 感知。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 6, perception: 8, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 0 } },
+  { name: '双生', title: '相拥旅者', artSlug: '02-embracing-duo', trait: '互相守护与疗愈', kit: ['styptic', 'mirrorCharm'], talent: { id: 'embraceWard', name: '共担微光', summary: '按 R 释放：立刻恢复 1 点生命，并解除「受伤」「疲惫」。', detail: '主动技能「共担微光」：释放后立即恢复 1 点生命，并解除「受伤」「疲惫」状态。两人是同一可玩单位；每局限一次。' }, base: { health: 5, stamina: 3, sanity: 4, strength: 4, agility: 4, perception: 6, luck: 6, intimidation: 5, stealth: 5, keys: 0, clues: 0 } },
+  { name: '绯影', title: '蒙面潜行者', artSlug: '03-black-red-hood', trait: '暗处行动与脱身', kit: ['smokeVial', 'lockpick'], talent: { id: 'redVeil', name: '赤影换位', summary: '按 R 释放：本回合脱身 / 潜行更稳，抹去暴露并 +1 体力。', detail: '主动技能「赤影换位」：释放后本回合你的逃脱 / 潜行更稳，立刻抹去「暴露」并恢复 1 点体力。每三回合可用一次。' }, base: { health: 3, stamina: 5, sanity: 4, strength: 4, agility: 8, perception: 6, luck: 5, intimidation: 5, stealth: 8, keys: 0, clues: 0 } },
+  { name: '蔷薇', title: '温室守护者', artSlug: '04-green-rose', trait: '疗愈与荆棘通路', kit: ['thornSeed', 'tonic'], talent: { id: 'roseBloom', name: '蔷薇再生', summary: '按 R 释放：立刻回满 3 点体力，并记下花园通路。', detail: '主动技能「蔷薇再生」：释放后立即恢复 3 点体力，并记下花园通路，之后可经常经花园捷径往返。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
+  { name: '夜冠', title: '赤冠执礼者', artSlug: '05-crimson-crown', trait: '威慑与坚定防线', kit: ['ironBadge', 'royalSeal'], talent: { id: 'crownOath', name: '赤冠号令', summary: '按 R 释放：标记一名对手，本回合对其夺取失手可再掷。', detail: '主动技能「赤冠号令」：释放后标记一名在场对手，本回合你对被标记者夺取失败会自动再掷一次。每局限一次。' }, base: { health: 5, stamina: 4, sanity: 4, strength: 5, agility: 5, perception: 5, luck: 5, intimidation: 8, stealth: 4, keys: 0, clues: 0 } },
+  { name: '彩墨', title: '斑斓画师', artSlug: '06-rainbow-painter', trait: '道具保养与发现', kit: ['paintVial', 'echoBell'], talent: { id: 'colorKeeper', name: '调色匣', summary: '按 R 释放：获得 1 条线索，并将目标一件道具上色使其暴露。', detail: '主动技能「调色匣」：释放后立刻获得 1 条线索；若指定一名同房对手，会将其一件道具上色，使该对手行踪暴露。每个阶段限一次。' }, base: { health: 4, stamina: 4, sanity: 4, strength: 4, agility: 6, perception: 7, luck: 7, intimidation: 4, stealth: 5, keys: 0, clues: 0 } },
+  { name: '眠羊', title: '靛蓝梦行者', artSlug: '07-indigo-sheep', trait: '稳住理智与梦境', kit: ['calmIncense', 'dreamThread'], talent: { id: 'dreamShepherd', name: '眠羊织梦', summary: '按 R 释放：使一名对手「沉迷」，并暴露一条线索给你。', detail: '主动技能「眠羊织梦」：释放后使一名同房对手陷入「沉迷」——本回合其逃脱 / 潜行更难成立，并暴露一条线索给你。每局限一次。' }, base: { health: 4, stamina: 3, sanity: 5, strength: 4, agility: 5, perception: 7, luck: 6, intimidation: 4, stealth: 6, keys: 0, clues: 1 } }
 ];
 HEROES.push(...NEW_HEROES);
 
@@ -464,8 +464,8 @@ for (const [vital, label, names] of [
     RECOVERY_IDS.push(id);
     ITEMS[id] = { name: names[index], glyph: ['✚', '▣', '✦'][index], colors: ['#a8d9b6', '#294238'], type: 'supply',
       category: 'active', useTags: ['heal', 'taste'], bonus: level, durability: 1, rarity: ['common', 'fine', 'epic'][index],
-      rare: level >= 2, description: `立即恢复${label}${level === 3 ? '大量' : level === 2 ? '适量' : '少量'}。`,
-      effect: { kind: 'restore', vital, amount: level === 3 ? 5 : level === 2 ? 3 : 1 } };
+      rare: level >= 2, description: vital === 'all' ? '立即让全队恢复 1 点生命、体力与理智。' : `立即恢复${label}${level === 3 ? ' 2 点' : level === 2 ? ' 2 点' : ' 1 点'}。`,
+      effect: { kind: 'restore', vital, amount: vital === 'all' ? 1 : (level === 3 ? 2 : level) } };
   });
 }
 const WARP_IDS = [];
@@ -504,9 +504,9 @@ ITEMS.windBeacon = { name: '风信标', glyph: '✴', colors: ['#a8d6e0', '#243b
 ITEMS.hourglassEscape = { name: '时砂漏', glyph: '⧗', colors: ['#e0c97a', '#4a3a1c'], type: 'portal', category: 'active', quick: true,
   useTags: ['escape', 'clock'], bonus: 2.3, durability: 2, rarity: 'fine',
   description: '翻倒砂漏：立刻脱离当前房间，本回合免疫一次夺取。不占行动。', effect: { kind: 'clockEscape', lowerIncoming: .6 } };
-for (const [id, name, value] of [['silverScrip', '银印筹', 1], ['goldScrip', '金印筹', 2], ['crownScrip', '夜冠筹', 3]]) {
+for (const [id, name, value] of [['silverScrip', '银印筹', 10], ['goldScrip', '金印筹', 20], ['crownScrip', '夜冠筹', 30]]) {
   ITEMS[id] = { name, glyph: '♛', colors: ['#d6bb84', '#4a352d'], type: 'relic', category: 'relic',
-    useTags: ['reward', 'search'], bonus: 0, durability: 1, rarity: value === 3 ? 'epic' : 'fine', rare: value > 1,
+    useTags: ['reward', 'search'], bonus: 0, durability: 1, rarity: value === 30 ? 'epic' : 'fine', rare: value > 10,
     description: `可作交易和抽奖筹码，价值${value}筹；平时不能使用。`, value,
     effect: { kind: 'currency' } };
 }
@@ -2803,7 +2803,7 @@ function renderInventory(player) {
     <span class="bag-key-line"><b>金钱/关键</b> <i>钥匙 ${player.stats.keys || 0}</i><i>线索 ${player.stats.clues || 0}</i> · ${compactCounts.relic}件</span>
     <button data-bag-open="${player.index}">完整行囊 <kbd>${keyLabel(keyRowOf(player.index).bag)}</kbd></button>
     <button data-quick-heal="${player.index}" ${bestHealItem(player) ? '' : 'disabled title="没有可用的治疗道具"'} class="quick-heal-btn" style="border-color:#7bc997;color:#7bc997">快捷治疗 <kbd>H</kbd></button>
-    ${(() => { const a = activeAvailability(player); const act = heroActiveOf(player); if (!act) return ''; const panel = player.turn?.activePanel; if (panel) { const tgts = act.needsTarget ? activeTargetsFor(player).map(t => `<button data-skill-target="${t.id}" data-player-index="${player.index}" class="skill-target ${panel.targetId === t.id ? 'on' : ''}">${t.label}${panel.targetId === t.id ? ' ✓' : ''}</button>`).join('') : ''; return `<span class="skill-panel"><b>${act.name}</b><small>${act.desc}</small>${tgts}<button data-skill-confirm="${player.index}" ${(!act.needsTarget || panel.targetId) ? '' : 'disabled'} >确认释放</button><button data-skill-cancel="${player.index}">取消</button></span>`; } return `<button data-skill-open="${player.index}" ${a.ok ? '' : `disabled title="${a.reason}"`} class="active-skill-btn" style="border-color:#d9b458;color:#d9b458">${act.name}</button>`; })()}
+    ${(() => { const a = activeAvailability(player); const act = heroActiveOf(player); if (!act) return ''; const panel = player.turn?.activePanel; if (panel) { const tgts = act.needsTarget ? activeTargetsFor(player).map(t => `<button data-skill-target="${t.id}" data-player-index="${player.index}" class="skill-target ${panel.targetId === t.id ? 'on' : ''}">${t.label}${panel.targetId === t.id ? ' ✓' : ''}</button>`).join('') : ''; return `<span class="skill-panel"><b>${act.name}</b><small>${act.desc}</small>${panel.reason ? `<i class="skill-reason">暂不可用：${panel.reason}</i>` : ''}${tgts}<button data-skill-confirm="${player.index}" ${(!panel.reason && (!act.needsTarget || panel.targetId)) ? '' : 'disabled'} >确认释放</button><button data-skill-cancel="${player.index}">取消</button></span>`; } return `<button data-skill-open="${player.index}" ${a.ok ? '' : `disabled title="${a.reason}"`} class="active-skill-btn" style="border-color:#d9b458;color:#d9b458">${act.name}</button>`; })()}
   </div>`;
   const bonusHost = $(`#systemBonuses-${player.index}`);
   if (bonusHost) {
@@ -3122,7 +3122,7 @@ function renderChoiceButton(player, entry, index) {
   return `<button class="choice ${isPicked ? 'picked' : ''}" data-player="${player.index}" data-choice="${index}" style="--tone:${choiceTone(entry)};--hint-tone:${hintTone}" ${disabled}>
     <span class="choice-key">${isPicked ? '✓' : key}</span>
     <span class="choice-copy"><b>${choiceTitle}</b><span>${choiceFlavor}</span></span>
-    <span class="choice-meta"><span class="risk">${kindTag}</span>${npcNote}<span class="choice-items">${itemStrip}</span>${talentTag}</span>
+    <span class="choice-meta"><span class="risk">${kindTag}</span>${npcNote}${entry.stat ? `<span class="choice-stat" title="本选项考验的主属性">${STAT_LABEL[entry.stat]} ${player.stats[entry.stat]}</span>` : ''}<span class="choice-res"><span class="res-ico ${player.stats.clues > 0 ? 'on' : 'off'}" title="线索（好感度选项可消耗）">✦线索</span><span class="res-ico ${player.stats.keys > 0 ? 'on' : 'off'}" title="钥匙（好感度选项可消耗）">⚿钥匙</span></span><span class="choice-items">${itemStrip}</span>${talentTag}</span>
   </button>`;
 }
 
@@ -4005,7 +4005,7 @@ function makeAttackOption(player, target) {
 function makePerceptionSeizeOption(player, target) {
   if (!hasPerceptionSeize(player)) return null;
   const estimate = calculateAttackChance(player, target, { style: 'perception' }, null).finalChance;
-  const effective = Math.round(estimate * 100) / 10;
+  const effective = Math.round(estimate * 1000) / 10;
   return {
     id: `perception-seize-${state.round}-${player.index}-${target.id}`,
     kind: 'attack', style: 'perception', targetId: target.id, stat: 'perception',
@@ -4299,7 +4299,7 @@ let score = (statOr(player.stats[entry.stat], statOr(player.stats.luck, 5))) * .
     if (!target || target.room !== player.room || target.collapsed) return -Infinity;
     const advantage = player.stats.strength + player.stats.agility + player.stats.stealth - target.stats.strength - target.stats.agility - target.stats.perception;
     const hatred = player.hatred[target.id] || 0;
-    const crowd = player.room === 'ruinConvergence' ? 0 : Math.max(0, state.players.filter(candidate => !candidate.collapsed && candidate.room === player.room && candidate.room !== 'dungeon' && !candidate.skippedThisRound).length - 2);
+    const crowd = Math.max(0, state.players.filter(candidate => !candidate.collapsed && candidate.room === player.room && candidate.room !== 'dungeon' && !candidate.skippedThisRound).length - 2);
     const expectedChance = calculateAttackChance(player, target, entry, chooseBestItem(player, entry), { spectatorCount: crowd }).chance;
     score += lowHealth ? -12 : 2 + expectedChance * 12 + advantage * .35 + (target.stats.health <= 2 ? 5 : 0) + hatred * .8 - crowd * 1.5;
   }
@@ -5242,10 +5242,11 @@ function chooseRoomLoot(player) {
     return pityGear(player);
   }
   const lootRoll = rng.next();
-  if (lootRoll < .38) return chooseVisibleSystemGear(player, 0);
-  if (lootRoll < .72) return pick(Object.keys(ITEMS).filter(id => ITEMS[id].category === 'relic'));
-  if (lootRoll < .84) return pick([...RECOVERY_IDS, ...WARP_IDS, 'hunterBeacon', 'escapeBeacon', 'riftStep', 'mirrorFerry', 'windBeacon', 'hourglassEscape']);
-  if (lootRoll < .93) return chooseSystemLoot(player);
+  if (lootRoll < .34) return chooseVisibleSystemGear(player, 0);
+  if (lootRoll < .62) return pick(Object.keys(ITEMS).filter(id => ITEMS[id].category === 'relic'));
+  if (lootRoll < .76) return pick(['silverScrip', 'goldScrip', 'crownScrip', 'silverScrip', 'goldScrip']);
+  if (lootRoll < .88) return pick([...RECOVERY_IDS, ...WARP_IDS, 'hunterBeacon', 'escapeBeacon', 'riftStep', 'mirrorFerry', 'windBeacon', 'hourglassEscape']);
+  if (lootRoll < .95) return chooseSystemLoot(player);
   const local = ROOM_LOOT[player.room] || ROOM_LOOT.corridor;
   const received = player.lootReceived || {};
   const base = { active: 3, equipment: 2.4, passive: 2.2, reactive: 3.2, relic: 2.5 };
@@ -5548,7 +5549,7 @@ function calculateAttackChance(attacker, defender, entry, item = null, context =
     : entry.style === 'ambush' && ['attic', 'storage'].includes(sceneRoom) ? .01
       : entry.style === 'menace' && sceneRoom === 'chapel' ? .01 : 0;
   const spectatorCount = context.spectatorCount ?? Math.max(0, state.players.filter(player => player.room === attacker.room && player.room !== 'dungeon' && !player.skippedThisRound).length - 2);
-  const crowdPenalty = sceneRoom === 'ruinConvergence' ? 0 : spectatorCount * .05;
+  const crowdPenalty = spectatorCount * .05;
 
   /* 最终夺取率：同值基准 40%，属性差走饱和曲线。
      旧版是「每 1 点差 ±4 个百分点」，上限 65%。属性进入几十上百之后，
@@ -5571,6 +5572,7 @@ function calculateAttackChance(attacker, defender, entry, item = null, context =
     + (entry.style === 'force' ? systemTier(attacker, 'breach') * .04 + systemPower(attacker, 'breach') * .012 : 0)
     + (entry.style === 'menace' ? systemTier(attacker, 'eclipse') * .04 : 0)
     + (gearPieceSystems(attacker, 1).some(system => ({hunt:'ambush',eclipse:'menace',breach:'force',astral:'ambush',dawn:'force',fate:'ambush',market:'menace'})[system] === entry.style) ? .025 : 0)
+    + (entry.style === 'perception' ? .05 : 0)
     - crowdPenalty;
   const baseCeiling = systemTier(attacker, 'hunt') >= 3 && entry.style === 'ambush' ? .90 : .78;
   const ceiling = crownBonus ? Math.max(baseCeiling, .95) : baseCeiling;
@@ -5578,7 +5580,7 @@ function calculateAttackChance(attacker, defender, entry, item = null, context =
   /* 【msg8 §20】无体系加成 = 随机夺取：未带进攻体系(夜猎/破城/蚀冠<2件)且非王冠持有者时，
      夺取率退化为纯随机掷骰(约 42%)，忽略属性优势；带体系或王冠才走确定性公式。 */
   const hasOffensiveSystem = systemTier(attacker, 'hunt') >= 2 || systemTier(attacker, 'breach') >= 2 || systemTier(attacker, 'eclipse') >= 2;
-  if (!hasOffensiveSystem && !crownBonus) finalChance = clamp(.42, .20, .95);
+  if (!hasOffensiveSystem && !crownBonus && entry.style !== 'perception') finalChance = clamp(.42, .20, .95);
 
   return {
     /* chance 与 finalChance 永远同一个值：预览、人机评估、实际判定、
@@ -6018,7 +6020,8 @@ function applyTalentAfterAction(player, entry, outcome, result, healthBefore) {
   } else if (talent === 'roseBloom' && entry.tags?.includes('heal')) {
     applyChanges(player, [['stamina', 1]], result);
     player.flags = uniqueAdd(player.flags, 'gardenRoute');
-    note = '蔷薇再生：花藤替你撑起一口气，花园也认下这条路。';
+    window.NightCrownWorld.relocate(player, 'garden', 'roseBloom');
+    note = `蔷薇再生：花藤替你撑起一口气，并把你送进${ROOM_BY_ID[player.room].name}。`;
   } else if (talent === 'crownOath' && succeeded && entry.stat === 'intimidation') {
     /* 【msg8 §4-A】赤冠号令：控场压制——标记一名在场对手，本回合对其夺取 / 攻击获得加成。 */
     const foes = state.players.filter(other => other.id !== player.id && !other.collapsed && other.room === player.room);
@@ -6169,12 +6172,20 @@ function consequenceFor(player, outcome, result, entry = null) {
       result.consequences.push('获得“专注”，下一次再动手时手会更稳。');
     }
   } else if (outcome === 'fail') {
+    if (entry?.kind === 'attack') {
+      applyChanges(player, [['stamina', -1]], result);
+      result.consequences.push('夺取失败：你扑空后踉跄了一下，体力 -1。');
+    }
     const mark = pick(['泥水脚印', '可疑刮痕', '残留气味']);
     const status = pick(['暴露', '疲惫', '动摇']);
     player.statuses = uniqueAdd(player.statuses, status);
     player.marks = uniqueAdd(player.marks, mark);
     result.consequences.push(`留下“${mark}”并获得“${status}”，之后的危险更容易找到你。`);
   } else if (outcome === 'critical') {
+    if (entry?.kind === 'attack') {
+      applyChanges(player, [['stamina', -2]], result);
+      result.consequences.push('夺取大败：你被反制，体力 -2。');
+    }
     // 大失败不再同时奉送诅咒 + 受伤 + 伤势三件套；改为二选一，避免状态堆叠造成螺旋。
     if (rng.next() < .5) {
       const curse = pick(['耳语', '倒影', '空腹']);
@@ -6271,6 +6282,7 @@ consequenceFor(player, outcome, result, entry);
   const staged = buildRandomChanges(outcome, entry);
   applyChanges(player, staged, null);
   applyTalentAfterAction(player, entry, outcome, result, healthBefore);
+  reconcileVitalPenalty(player);
   if (['success', 'great'].includes(outcome)) {
     if (systemTier(player, 'astral') >= 2 && entry.tags?.includes('search') && !player.astralUsedThisRound) {
       player.astralUsedThisRound = true;
@@ -6294,8 +6306,8 @@ consequenceFor(player, outcome, result, entry);
     if (['search', 'sneak', 'mystery', 'explore'].some(t => entry.tags?.includes(t))) {
       const riskMul = 1 + (Number(entry.risk) || 1) * .2;
       const goldGain = Math.round((12 + Math.floor((state.round || 1) / 2) * 3) * riskMul);
-      player.gold = (player.gold || 0) + goldGain;
-      result.consequences.push(`探索中你摸到 ${goldGain} 枚散落的金币（探索收益最高，将计入总分）。`);
+      player.chips = (player.chips || 0) + goldGain;
+      result.consequences.push(`探索中你摸到 ${goldGain} 枚筹码（金币已统一为筹码，计入总分）。`);
     }
   }
   result.pendingChanges = staged;
@@ -6385,13 +6397,13 @@ async function resolveRewardAction(player, intent, result) {
   if (intent.entry.tags && intent.entry.tags.includes('gold')) {
     /* 【msg8 §8/§9】不同金钱来源分级：流金(goldVault) 极大 / 赤金契约 大 / 钱袋 中 / 零钱堆 小。 */
     const GOLD_ITEM_TIER = {
-      零钱堆: 8, 钱袋: 22, 流金: 45, 赤金契约: 70
+      零钱堆: 80, 钱袋: 220, 流金: 450, 赤金契约: 700
     };
     const held = player.inventory.find(it => GOLD_ITEM_TIER[ITEMS[it.id]?.name]);
-    const GOLD_BY_ENTRY = { '取走流金': 45 };
-    const goldGain = held ? GOLD_ITEM_TIER[ITEMS[held.id].name] : (GOLD_BY_ENTRY[intent.entry.text] || 25);
-    player.gold = (player.gold || 0) + goldGain;
-    result.consequences.push(`流金顺着指缝淌进怀里，你攒下 ${goldGain} 枚金币（将计入总分）。`);
+    const GOLD_BY_ENTRY = { '取走流金': 450 };
+    const goldGain = held ? GOLD_ITEM_TIER[ITEMS[held.id].name] : (GOLD_BY_ENTRY[intent.entry.text] || 250);
+    player.chips = (player.chips || 0) + goldGain;
+    result.consequences.push(`流金顺着指缝淌进怀里，你攒下 ${goldGain} 枚筹码（金币已统一为筹码，计入总分）。`);
   }
   if (validRelic) {
     result.outcome = 'great';
@@ -6545,8 +6557,9 @@ function applyItemEffect(player, item, result, opts = {}) {
     }
     case 'gardenPath':
       player.flags = uniqueAdd(player.flags, 'gardenRoute');
+      window.NightCrownWorld.relocate(player, 'garden', 'gardenPath');
       applyChanges(player, [['stamina', 2]], result);
-      result.consequences.push('种子攀上门框，花园的路从此向你敞开；枝叶替你缓了一口气。');
+      result.consequences.push(`种子攀上门框，一路把你送进${ROOM_BY_ID[player.room].name}；枝叶替你缓了一口气。`);
       return true;
     case 'fortify':
       player.protection = Math.max(player.protection, 1);
@@ -6569,8 +6582,8 @@ function applyItemEffect(player, item, result, opts = {}) {
       }
       return true;
     case 'rations':
-      applyChanges(player, [['stamina', 3], ['health', 1]], result);
-      result.consequences.push('口粮让你重新站稳，伤口也不再发冷。');
+      applyChanges(player, [['stamina', 2]], result);
+      result.consequences.push('口粮让你重新站稳，体力回了 2 点。');
       return true;
     case 'mothGuide':
       applyChanges(player, [['clues', 1]], result);
@@ -6834,12 +6847,16 @@ function npcCheckTarget(player, choice) {
   const penalty = player.statuses.includes('受伤') ? .7 : 0;
   const talkGear = gearPieceSystems(player, 3).some(system => GEAR_SYSTEMS[system].stat === choice.stat) ? .6 : 0;
   const darkAccess = choice.id?.includes('gear-offer-eclipse') && player.inventory.length <= 3 && player.stats.intimidation <= 6 ? 2 : 0;
+  /* 【反馈·线索钥匙】好感度选项：持有线索 / 钥匙可提升通过概率，使用时在 resolveNpcAction 中消耗。 */
+  const affinity = Number(choice.rel) > 0;
+  const clueKeyBonus = affinity ? ((player.stats.clues > 0 ? 0.4 : 0) + (player.stats.keys > 0 ? 0.4 : 0)) : 0;
   /* 对话检定与普通检定用同一套「属性 / 难度」曲线，
      否则属性长大之后所有话题都会自动成功。关系、道具、话题装备仍然各自加分。 */
   const difficulty = roomDifficulty(player, { risk: choice.risk }) * 1.05;
   const score = ratioScore(effectiveStat(player, choice.stat), difficulty, 3)
     + ratioScore(effectiveStat(player, 'luck'), difficulty, .6)
     + itemBonus * .12 + relationBonus * .15 + talkGear * .12 + darkAccess * .2
+    + clueKeyBonus
     - penalty * .15 + rand(-3, 3) / 10;
   const threshold = Number.isFinite(Number(choice.check)) ? Number(choice.check) : CHECK_SUCCESS;
   return { success: score >= threshold, score, threshold, itemHit, relation };
@@ -6929,6 +6946,8 @@ async function resolveNpcAction(player, intent, result) {
     result.story = `${npc.name}没有回应这个问题。`;
     return;
   }
+  /* 【反馈·线索钥匙】好感度选项消耗线索 / 钥匙换取更高的通过概率。
+     注意：消耗必须放在 npcCheckTarget 之后，否则加成会因资源已扣而读成 0（白付没加成）。 */
   if (topic.id === 'dealer-lottery') {
     const payment = player.inventory.find(item => ITEMS[item.id]?.category === 'relic');
     result.title = `${npc.name}：关键遗物抽奖`;
@@ -6950,6 +6969,11 @@ async function resolveNpcAction(player, intent, result) {
   }
   const choice = { ...topic, npcId: npc.id };
   const check = npcCheckTarget(player, choice);
+  /* 先算加成（npcCheckTarget 内已按当前线索/钥匙计入），再扣资源，避免白付。 */
+  if (topic.rel) {
+    if (player.stats.clues > 0) applyChanges(player, [['clues', -1]], result);
+    if (player.stats.keys > 0) applyChanges(player, [['keys', -1]], result);
+  }
   // 有几条“结束对话”型话题只写了 success 分支。缺分支时必须回落到已有分支，
   // 绝不能让一条数据缺失把一整个行动点变成运行时异常。
   const branch = (check.success ? choice.success : choice.failure)
@@ -7074,8 +7098,8 @@ async function resolveNpcAction(player, intent, result) {
   if (check.success && choice.risk >= 2 && npc.id !== 'relicDealer') {
     const goldBase = 12 + Math.floor((state.round || 1) / 2) * 3;
     const goldNpc = Math.round(goldBase * 1.4);
-    player.gold = (player.gold || 0) + goldNpc;
-    result.consequences.push(`这段冒险式交谈格外值钱，你收下了 ${goldNpc} 枚金币（普通房只有 ${goldBase}）。`);
+    player.chips = (player.chips || 0) + goldNpc;
+    result.consequences.push(`这段冒险式交谈格外值钱，你收下了 ${goldNpc} 枚筹码（普通房只有 ${goldBase}）。`);
     const rewardFromNpc = rng.next() < 0.5 ? null : chooseVisibleSystemGear(player, player.turn.activeSlot);
     if (rewardFromNpc && canCarryItem(player, rewardFromNpc)) {
       giveItem(player, rewardFromNpc, result);
@@ -7454,12 +7478,34 @@ function scorePlayer(player) {
 	return Math.round((core + vitals + keyItems + build + gold) * bellMultiplierFor(player) * 10) / 10;
 }
 
+// 三大生命值（生命/体力/理智）归零时，对应核心属性被大幅削弱；回升到 0 以上即解除。
+// 映射：生命→力量、体力→敏捷、理智→威慑。崩坏状态持续施加 -4，恢复后原样加回。
+function reconcileVitalPenalty(player) {
+  if (!player || player.collapsed) return;
+  if (!player._vitalPen) player._vitalPen = { health: 0, stamina: 0, sanity: 0 };
+  const map = { health: 'strength', stamina: 'agility', sanity: 'intimidation' };
+  for (const v of ['health', 'stamina', 'sanity']) {
+    const core = map[v];
+    const tag = `虚弱·${STAT_LABEL[v]}归零`;
+    if (player.stats[v] <= 0 && player._vitalPen[v] === 0) {
+      player._vitalPen[v] = 4;
+      applyChanges(player, [[core, -4]], null);
+      player.statuses = uniqueAdd(player.statuses, tag);
+    } else if (player.stats[v] > 0 && player._vitalPen[v] > 0) {
+      applyChanges(player, [[core, player._vitalPen[v]]], null);
+      player._vitalPen[v] = 0;
+      player.statuses = player.statuses.filter(s => s !== tag);
+    }
+  }
+}
+
 // 崩溃只处理对应角色：真人崩溃结束对局，隐藏人机崩溃仅被移除并广播叙事。
 // 原版"任一人归零即全局结束"会让一个人机把真人的整局比赛提前终止。
 function processCollapses() {
   const removed = [];
   for (const player of state.players) {
     if (player.collapsed) continue;
+    reconcileVitalPenalty(player);
     if (!player.dawnRescueUsed && systemTier(player, 'dawn') >= 3
       && (player.stats.health <= 0 || player.stats.sanity <= 0 || player.stats.stamina <= 0)) {
       player.dawnRescueUsed = true;
@@ -7588,13 +7634,13 @@ function endGame(reason = 'dawn') {
       <div class="end-rank">${isLeader ? '♛' : String(ranked.findIndex(row => row.index === index) + 1).padStart(2, '0')}</div>
       <div class="end-record-main"><b>${player.label} · ${character.name}</b>
         <span>${endReasonText(player)} · ${character.talent.name}</span>
-        <small>到达 ${stageById(state.stageId).label} 第 ${state.round} 回合 · 金币 ${player.gold || 0}（计分 ${parts.gold || 0}） · 线索 ${player.stats.clues} · 钥匙 ${player.stats.keys} · 道具 ${player.inventory.length} 件</small>
+        <small>到达 ${stageById(state.stageId).label} 第 ${state.round} 回合 · 筹码 ${player.chips || 0}（计分 ${Math.round((parts.gold || 0) * 10) / 10}） · 线索 ${player.stats.clues} · 钥匙 ${player.stats.keys} · 道具 ${player.inventory.length} 件</small>
         <small class="end-gear">主属性：${cores[0][0]} ${cores[0][1]} · 本局峰值 ${peakValue}</small>
         <small class="end-gear">行囊记忆：${gear}</small>
         <small class="end-gear">套装：${sets.join('、') || '未成型'}</small>
         ${affixes.length ? `<small class="end-gear">关键成长词条：${affixes.join('、')}</small>` : ''}
         <details class="end-detail"><summary>分数从哪来</summary>
-          <span>核心成长 ${Math.round(parts.core * 10) / 10} · 生存状态 ${Math.round(parts.vitals * 10) / 10} · 关键物品 ${Math.round(parts.keyItems * 10) / 10} · 构筑完成度 ${Math.round(parts.build * 10) / 10} · 金币 ${Math.round((parts.gold || 0) * 10) / 10}</span>
+          <span>核心成长 ${Math.round(parts.core * 10) / 10} · 生存状态 ${Math.round(parts.vitals * 10) / 10} · 关键物品 ${Math.round(parts.keyItems * 10) / 10} · 构筑完成度 ${Math.round(parts.build * 10) / 10} · 筹码 ${Math.round((parts.gold || 0) * 10) / 10}</span>
         </details></div><strong>${score}<em>夜冠印记</em></strong>
     </article>`;
   }).join('');
@@ -8002,9 +8048,11 @@ function confirmItemUse(playerIndex) {
 function openActivePanel(playerIndex, targetId = null) {
   const player = state.players[playerIndex];
   if (!player || player.control !== 'human' || state.resolving) return false;
+  const act = heroActiveOf(player);
+  if (!act) { player.turn.notice = '该角色没有主动技能'; renderAll(); return false; }
   const avail = activeAvailability(player);
-  if (!avail.ok) { player.turn.notice = `技能不可用：${avail.reason}`; renderAll(); return false; }
-  player.turn.activePanel = { targetId: targetId || null };
+  // 即使当前不可用也打开面板：让玩家看清为什么，而不是“按了没反应”。
+  player.turn.activePanel = { targetId: targetId || null, reason: avail.ok ? '' : avail.reason };
   renderAll();
   return true;
 }
