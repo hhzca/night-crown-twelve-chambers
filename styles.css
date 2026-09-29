@@ -1680,6 +1680,53 @@ body {
 .choice-meta { flex-direction: row; align-items: center; gap: 4px; }
 .choice-meta .risk, .choice-npc, .choice-talent { white-space: nowrap; }
 .choice-items { flex-wrap: nowrap; }
+
+/* --- 选项右上角的四类小标签：主属性 / 线索·钥匙 / 道具 / 天赋 --------------
+   原来 .choice-stat 与 .res-ico 根本没有自己的规则，直接继承了正文的浅白色，
+   在本就偏暗的按钮底色上过亮、字号也偏大，把"选项写了什么"这份重点抢走。
+   这里统一压到 11px，并各自给一组有色玻璃质感（不使用纯白），
+   颜色语义：属性走选项自己的色相；线索=紫，钥匙=金；道具靠图标本身表达。 */
+.choice-stat {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--hint-tone, var(--tone)) 72%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--hint-tone, var(--tone)) 55%, transparent);
+  background: color-mix(in srgb, var(--hint-tone, var(--tone)) 20%, #0d0f17);
+  text-shadow: 0 0 7px color-mix(in srgb, var(--hint-tone, var(--tone)) 48%, transparent);
+}
+.choice-res { display: inline-flex; align-items: center; gap: 3px; }
+.choice-res:empty { display: none; }
+.res-ico {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  opacity: .45;
+  filter: saturate(.4);
+}
+.res-ico.on { opacity: 1; filter: none; }
+.res-ico.on:first-child {
+  color: #dcb6f2;
+  border-color: #a978c9aa;
+  background: #2a1a3a;
+  text-shadow: 0 0 7px #b47ce066;
+}
+.res-ico.on:last-child {
+  color: #f2d489;
+  border-color: #d6ab5aaa;
+  background: #322712;
+  text-shadow: 0 0 7px #d9a94f66;
+}
+.res-ico.off { color: #6d6a76; border-color: #ffffff1a; background: #14161f; }
+/* 道具条里的图标本身已经有体系配色，这里只把尺寸收紧，别再让它顶高整行。 */
+.choice-items .item-icon.small { width: 22px; height: 22px; flex-basis: 22px; font-size: .62rem; border-radius: 5px; }
 /* 收紧行距，让两行选项在 720p 也能完整落在固定高度的反馈区里。 */
 .choice-copy b { line-height: 1.25; }
 .choice-copy span { line-height: 1.25; margin-top: 2px; }
